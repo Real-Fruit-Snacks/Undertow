@@ -1,0 +1,8 @@
+# Build artifacts
+/undertow
+bin/*
+!bin/.gitignore
+
+# Claude Code
+CLAUDE.md
+.omc/
