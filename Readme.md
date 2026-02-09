@@ -433,7 +433,7 @@ Then: `ssh target`
 
 **Built for offense. Tested in labs.**
 
-[GitHub](https://github.com/Fahrj/reverse-ssh) | [License (GPLv3)](LICENSE) | [Report Issue](https://github.com/Fahrj/reverse-ssh/issues)
+[GitHub](https://github.com/Real-Fruit-Snacks/Undertow) | [License (GPLv3)](LICENSE) | [Report Issue](https://github.com/Real-Fruit-Snacks/Undertow/issues)
 
 *Undertow — SSH where it shouldn't be*
 
