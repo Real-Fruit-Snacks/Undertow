@@ -1,0 +1,12 @@
+# Build artifacts
+/undertow
+bin/*
+!bin/.gitignore
+
+# SSH keys
+assets/id_undertow
+assets/id_undertow.pub
+
+# Claude Code
+CLAUDE.md
+.omc/

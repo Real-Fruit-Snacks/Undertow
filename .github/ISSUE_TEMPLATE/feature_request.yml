@@ -1,0 +1,67 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Undertow
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to Undertow.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What area does this feature relate to?
+      options:
+        - Shell / PTY
+        - Networking / Tunneling
+        - TLS / Evasion
+        - SFTP / File Transfer
+        - Build System
+        - Authentication
+        - Platform Support
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the feature you'd like
+      placeholder: I would like Undertow to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: How would this feature be used in a penetration testing engagement?
+      placeholder: During an engagement, I need to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: binary-size
+    attributes:
+      label: Binary Size Impact
+      description: Would this feature increase binary size?
+      options:
+        - No impact
+        - Minimal increase (<100KB)
+        - Moderate increase (100KB-500KB)
+        - Significant increase (>500KB)
+        - Unknown
+    validations:
+      required: false
