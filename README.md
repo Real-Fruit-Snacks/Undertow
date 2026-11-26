@@ -34,6 +34,7 @@ undertow is the preservation fork of [Ferdinor's undertow](https://github.com/Fe
 
 ## Tested on
 
+- 16 in-process integration tests run the real server on loopback: password and pubkey auth (accept and reject), exec with exit status, PTY shell, SFTP round trip, direct-tcpip and remote forwarding, the rs-info channel and the full dial-home reverse flow — on every commit in CI and on the Windows build host
 - Windows 11 · Go 1.27 — build host; gofmt, `go vet`, clean builds for all six targets
 - ubuntu-24.04, windows-2022, macos-latest · CI builds amd64 and arm64 on every commit
 - *Not* run: macOS at runtime — cross-compiled on every release, unsigned; first run needs `xattr -d com.apple.quarantine`
