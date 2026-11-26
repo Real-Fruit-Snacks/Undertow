@@ -110,6 +110,15 @@ func outInfof(format string, args ...any) {
 	fmt.Fprintln(os.Stdout, outPaint(cSteel, cSteel16, "[i]", fmt.Sprintf(format, args...)))
 }
 
+// outStepf labels an operator instruction needed to use a live session.
+// Unlike informational detail, these labels are printed unless quiet.
+func outStepf(format string, args ...any) {
+	if outQuiet.Load() {
+		return
+	}
+	fmt.Fprintln(os.Stdout, outPaint(cSteel, cSteel16, "[i]", fmt.Sprintf(format, args...)))
+}
+
 // outPlanf reports a step the tool will take. Muted.
 func outPlanf(format string, args ...any) {
 	if outQuiet.Load() || !outVerbose.Load() {

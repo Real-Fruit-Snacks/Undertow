@@ -366,7 +366,10 @@ func printConnectLines(listeningAddress string) {
 		return
 	}
 	sock := fmt.Sprintf("/tmp/shell-tunnel-%s.sock", port)
+	outStepf("1. Create the master socket (run once):")
 	outCommandf("ssh -fNM -S %s -p %s %s@%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes", sock, port, LUSER, host)
+	outCommandf("")
+	outStepf("2. Connect through that socket:")
 	outCommandf("ssh -S %s -p %s %s@%s", sock, port, LUSER, host)
 }
 
