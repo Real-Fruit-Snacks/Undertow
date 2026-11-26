@@ -22,6 +22,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"os/user"
 
@@ -29,10 +30,27 @@ import (
 	"github.com/gliderlabs/ssh"
 )
 
+// resolvePtyShell keeps the default /bin/bash from killing the session on
+// bash-less targets: if the default is missing and /bin/sh exists, fall
+// back to it. An explicit -s or RS_SHELL path is honoured verbatim.
+func resolvePtyShell(shell string) string {
+	if shell != defaultShell {
+		return shell
+	}
+	if _, err := os.Stat(shell); err == nil {
+		return shell
+	}
+	if _, err := os.Stat("/bin/sh"); err == nil {
+		outInfof("%s not present on the target; falling back to /bin/sh", shell)
+		return "/bin/sh"
+	}
+	return shell
+}
+
 func createPty(s ssh.Session, shell string) {
 	var (
 		ptyReq, winCh, _ = s.Pty()
-		cmd              = exec.CommandContext(s.Context(), shell)
+		cmd              = exec.CommandContext(s.Context(), resolvePtyShell(shell))
 	)
 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))

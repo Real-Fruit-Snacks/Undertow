@@ -9,7 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.4.0] - 2026-11-26
 
 ### Added
-- Dial-home retries every 5 seconds until the listener answers, instead of exiting on the first failed attempt; a wrong baked password also retries (Ctrl+C to stop). New late-listener regression test, 17 tests in total.
+- Dial-home retries every 5 seconds until the listener answers, instead of exiting on the first failed attempt; a wrong baked password also retries (Ctrl+C to stop). New late-listener regression test.
+- Callbacks are numbered (`Session 1: …`) and print two paste-ready commands: a ControlMaster line (`ssh -fNM -S /tmp/shell-tunnel-<port>.sock …` with `UserKnownHostsFile=/dev/null`, `StrictHostKeyChecking=no`, `ServerAliveInterval=60`, `ServerAliveCountMax=10` and `ExitOnForwardFailure=yes`) and the connect line over that socket, so SFTP and forwards share one authenticated connection and per-run host keys never touch `~/.ssh/known_hosts`. The `build.sh` handler teaches the same two lines.
+- `-V` / `--version` prints `shell-tunnel vX.Y.Z` and exits 0.
+- Dial-home sends `keepalive@openssh.com` every 15 seconds, so NAT and stateful-firewall idle timeouts don't eat parked callbacks.
+- The PTY shell falls back to `/bin/sh` when the default `/bin/bash` is missing on the target (explicit `-s`/`RS_SHELL` paths are honoured verbatim). New unix-only test, 18 tests in total.
 
 ### Changed
 - Renamed from Undertow to shell-tunnel, following the RFS naming rule (`thing-it-does`, lowercase, hyphens). The repository, CLI binary, build outputs, release assets and docs page all take the new name; the upstream fork note and the original copyright headers are unchanged.
