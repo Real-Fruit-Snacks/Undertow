@@ -27,11 +27,21 @@ Instead, please email security concerns to the repository maintainers through Gi
 
 ## Scope
 
-This security policy applies to the Undertow codebase itself. Since Undertow is a penetration testing tool designed for authorized security assessments, the following are **not** in scope:
+This security policy applies to the Undertow codebase itself. Undertow is a dual-use tool: its shells and forwarding are the feature, so reports are triaged against the threat model below rather than against the mere presence of offensive capability.
 
-- The intended offensive capabilities of the tool (reverse shells, bind shells, etc.)
-- TLS wrapping behavior (this is a feature, not a vulnerability)
+**In scope:**
+
+- Credential handling and authentication logic (password comparison, public key verification)
+- SSH server surface (session handling, channel/request dispatch, forwarding callbacks)
+- TLS wrapping implementation (certificate generation, ALPN/SNI handling)
+- Release integrity (build and publish workflows, checksums)
+
+**Not in scope:**
+
+- The intended offensive capabilities of the tool (reverse shells, bind shells, port forwarding, etc.)
+- TLS wrapping behavior itself (this is a feature, not a vulnerability)
 - Authentication bypass when credentials are known (credentials are displayed at build time)
+- Operator-side operational security (where and how the binary is deployed)
 
 ## Supported Versions
 

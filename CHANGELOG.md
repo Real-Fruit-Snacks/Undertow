@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Contributing guidelines
 - GitHub issue and PR templates
 - GitHub Pages site
+- CI workflow (gofmt, go vet, go test, cross-compile build matrix for Linux, Windows and macOS)
+- Release workflow (tagged releases with 6 cross-compiled assets and SHA256SUMS.txt)
+- Repository guardrails (AGENTS.md)
+
+### Changed
+- Updated all dependencies, including `golang.org/x/crypto` from the 2021 pin to v0.59.0 (clears known SSH vulnerabilities) and `gliderlabs/ssh` to v0.3.8
+- Minimum Go version is now 1.26
+
+### Fixed
+- `ssh.Server` is now passed by pointer; the newer `gliderlabs/ssh` server struct contains a `sync.WaitGroup` and must not be copied
 
 ## [1.0.0] - Initial Release
 

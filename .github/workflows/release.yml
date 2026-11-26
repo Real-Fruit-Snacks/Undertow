@@ -1,0 +1,89 @@
+name: release
+
+# A vX.Y.Z tag: check the changelog, run CI, cross-compile the release
+# binaries, then publish with notes from CHANGELOG.md and SHA256SUMS.txt.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: CHANGELOG.md and main.go carry this version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^## \[$v\]" CHANGELOG.md
+          grep -Eq "version[[:space:]]+=[[:space:]]+\"$v\"" main.go
+
+  ci:
+    needs: changelog
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: changelog
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-24.04, goos: linux,  goarch: amd64, asset: undertow-x86_64-linux.tar.gz,          exe: undertow }
+          - { os: ubuntu-24.04, goos: linux,  goarch: arm64, asset: undertow-aarch64-linux.tar.gz,         exe: undertow }
+          - { os: windows-2022, goos: windows, goarch: amd64, asset: undertow-x86_64-windows.zip,          exe: undertow.exe }
+          - { os: windows-2022, goos: windows, goarch: arm64, asset: undertow-aarch64-windows.zip,         exe: undertow.exe }
+          - { os: macos-latest, goos: darwin, goarch: amd64, asset: undertow-x86_64-apple-darwin.tar.gz,   exe: undertow }
+          - { os: macos-latest, goos: darwin, goarch: arm64, asset: undertow-aarch64-apple-darwin.tar.gz,  exe: undertow }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -ldflags "-s -w -X main.version=$v" -o "${{ matrix.exe }}" .
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [[ "${{ matrix.asset }}" == *.zip ]]; then
+            7z a "dist/${{ matrix.asset }}" "${{ matrix.exe }}"
+          else
+            tar -czf "dist/${{ matrix.asset }}" "${{ matrix.exe }}"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: downloads-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+  publish:
+    needs: [ci, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: downloads-*
+          path: dist
+          merge-multiple: true
+      - name: SHA256SUMS.txt
+        working-directory: dist
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Notes from CHANGELOG.md
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk "/^## \[$v\]/{f=1;next} /^## \[/{f=0} f" CHANGELOG.md > notes.md
+          cat notes.md
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag --latest
