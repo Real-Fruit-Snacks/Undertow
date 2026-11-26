@@ -20,10 +20,10 @@
 ## Checklist
 
 - [ ] Code compiles with `CGO_ENABLED=0`
-- [ ] `go fmt ./...` produces no changes
+- [ ] `gofmt -l .` produces no output
 - [ ] `go vet ./...` reports no issues
 - [ ] Cross-compilation works (Linux + Windows, x86 + x64)
-- [ ] Binary remains under 1.5MB
+- [ ] Stripped binary size not materially grown (about 6.5 MB today)
 - [ ] No cgo dependencies introduced
 - [ ] Tested on at least one platform
 

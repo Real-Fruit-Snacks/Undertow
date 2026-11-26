@@ -1,0 +1,31 @@
+# Cover + social preview. Regenerate from the folder holding both clones:
+#   python3 rfs-brand/tools/make-cover.py Undertow/docs/assets/cover.toml
+# Preview at 1200, 830, and 400 px in both themes:
+#   python3 rfs-brand/tools/make-cover.py Undertow/docs/assets/cover.toml --preview preview.png
+name        = "undertow"
+description = "Static SSH server for bind and reverse shells with PTY and SFTP"
+
+# The tool as a flow: the operator builds a tuned binary, the target runs it,
+# and a plain ssh client gets the session. Status lines are real output.
+[panel]
+kind   = "flow"
+status = [
+  "ok listening at home on 127.0.0.1:4444",
+  "ok new connection from 10.10.11.23",
+]
+
+[panel.input]
+label = "target"
+note  = "runs the static binary"
+chips = ["reverse", "bind", "tls"]
+tone  = "amber"
+
+[panel.tool]
+label = "undertow"
+note  = "shells · sftp · forward"
+
+[panel.output]
+label = "operator"
+note  = "plain ssh client"
+value = "PTY shell"
+tone  = "mint"

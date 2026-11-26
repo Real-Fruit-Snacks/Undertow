@@ -1,0 +1,11 @@
+* text=auto
+
+# Go sources go through gofmt, which is LF-only.
+*.go text eol=lf
+
+# Shell scripts and the Makefile keep LF everywhere.
+*.sh text eol=lf
+Makefile text eol=lf
+
+# Generated handler scripts are POSIX sh too.
+bin/handler-* text eol=lf

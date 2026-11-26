@@ -21,7 +21,6 @@ package main
 
 import (
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -39,17 +38,17 @@ func createPty(s ssh.Session, shell string) {
 		vsn.BuildNumber < 17763 {
 		// Interactive Pty via ssh-shellhost.exe
 
-		log.Println("Windows version too old to support ConPTY shell")
+		outWarnf("Windows version too old to support ConPTY shell")
 
 		if shell == defaultShell {
-			log.Println("No fully interactive shell available, denying PTY request")
+			outWarnf("No fully interactive shell available, denying PTY request")
 			io.WriteString(s, "No ConPTY shell or ssh-shellhost enhanced shell available. "+
 				"Please append 'cmd' to your ssh command to gain shell access, i.e. "+
 				"'ssh <OPTIONS> <IP> cmd'.\n")
 			s.Exit(255)
 			return
 		}
-		log.Println("Launching shell with ssh-shellhost.exe")
+		outInfof("Launching shell with ssh-shellhost.exe")
 
 		cmd := exec.CommandContext(s.Context(), shell)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -59,13 +58,13 @@ func createPty(s ssh.Session, shell string) {
 		}
 		// We use StdinPipe to avoid blocking on missing input
 		if stdin, err := cmd.StdinPipe(); err != nil {
-			log.Println("Could not initialize stdinPipe", err)
+			outWarnf("Could not initialize stdinPipe: %v", err)
 			s.Exit(255)
 			return
 		} else {
 			go func() {
 				if _, err := io.Copy(stdin, s); err != nil {
-					log.Printf("Error while copying input from %s to stdin: %s", s.RemoteAddr().String(), err)
+					outWarnf("Error while copying input from %s to stdin: %v", s.RemoteAddr().String(), err)
 				}
 				s.Close()
 			}()
@@ -79,16 +78,16 @@ func createPty(s ssh.Session, shell string) {
 		select {
 		case err := <-done:
 			if err != nil {
-				log.Println("Session ended with error:", err)
+				outWarnf("Session ended with error: %v", err)
 				s.Exit(255)
 				return
 			}
-			log.Println("Session ended normally")
+			outOkf("Session ended normally")
 			s.Exit(cmd.ProcessState.ExitCode())
 			return
 
 		case <-s.Context().Done():
-			log.Printf("Session terminated: %s", s.Context().Err())
+			outInfof("Session terminated: %v", s.Context().Err())
 			return
 		}
 
@@ -97,7 +96,7 @@ func createPty(s ssh.Session, shell string) {
 
 		cpty, err := conpty.New(int16(ptyReq.Window.Width), int16(ptyReq.Window.Height))
 		if err != nil {
-			log.Printf("Could not open a conpty terminal: %v", err)
+			outWarnf("Could not open a conpty terminal: %v", err)
 			io.WriteString(s, "Failed to create terminal\n")
 			s.Exit(255)
 			return
@@ -120,15 +119,15 @@ func createPty(s ssh.Session, shell string) {
 			},
 		)
 		if err != nil {
-			log.Printf("Could not spawn a powershell: %v", err)
+			outWarnf("Could not spawn a powershell: %v", err)
 			io.WriteString(s, "Failed to spawn shell\n")
 			s.Exit(255)
 			return
 		}
-		log.Printf("New process with pid %d spawned", pid)
+		outInfof("New process with pid %d spawned", pid)
 		process, err := os.FindProcess(pid)
 		if err != nil {
-			log.Printf("Failed to find process: %v", err)
+			outWarnf("Failed to find process: %v", err)
 			io.WriteString(s, "Failed to find shell process\n")
 			s.Exit(255)
 			return
@@ -160,16 +159,16 @@ func createPty(s ssh.Session, shell string) {
 		select {
 		case result := <-done:
 			if result.error != nil {
-				log.Println("Error waiting for process:", result.error)
+				outWarnf("Error waiting for process: %v", result.error)
 				s.Exit(255)
 				return
 			}
-			log.Printf("Session ended normally, exit code %d", result.ProcessState.ExitCode())
+			outOkf("Session ended normally, exit code %d", result.ProcessState.ExitCode())
 			s.Exit(result.ProcessState.ExitCode())
 			return
 
 		case <-s.Context().Done():
-			log.Printf("Session terminated: %s", s.Context().Err())
+			outInfof("Session terminated: %v", s.Context().Err())
 			return
 		}
 	}

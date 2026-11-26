@@ -8,9 +8,8 @@ Thank you for your interest in contributing to Undertow. This document provides 
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| Go | >= 1.15 | Compilation |
+| Go | >= 1.26 | Compilation |
 | Make | Any | Build orchestration |
-| UPX | Optional | Binary compression |
 | Git | Any | Version control |
 
 ### Getting Started
@@ -34,11 +33,14 @@ make build
 
 ```
 undertow/
-├── main.go                    # Entry point, SSH server setup
-├── core.go                    # Auth, port forwarding, TLS, SFTP
+├── main.go                    # Entry point, ldflags-baked variables, server wiring
+├── core.go                    # Auth, port forwarding, TLS, SFTP, parameter parsing
+├── out.go                     # Bracketed status output (RFS Cyclorama Dawn palette)
 ├── ssh_session.go             # Session dispatcher
 ├── ssh_session_unix.go        # Unix PTY (creack/pty)
 ├── ssh_session_windows.go     # Windows ConPTY
+├── detach_unix.go             # Background mode (setsid)
+├── detach_windows.go          # Background mode (DETACHED_PROCESS)
 ├── build.sh                   # Build wrapper script
 ├── Makefile                   # Cross-compilation targets
 └── docs/                      # GitHub Pages site
@@ -95,11 +97,12 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `chore`
 ### PR Requirements
 
 - [ ] Code compiles with `CGO_ENABLED=0`
-- [ ] `go fmt ./...` produces no changes
+- [ ] `gofmt -l .` produces no output
 - [ ] `go vet ./...` reports no issues
 - [ ] Cross-compilation works (`GOOS=linux` and `GOOS=windows`)
-- [ ] Binary remains under 1.5MB (uncompressed)
+- [ ] Stripped binary size not materially grown (about 6.5 MB per target today)
 - [ ] No cgo dependencies introduced
+- [ ] Status output uses the bracketed tokens (`[ok]`, `[!]`, `[x]`, `[i]`) via `out.go` and respects `NO_COLOR`
 
 ## What We Accept
 

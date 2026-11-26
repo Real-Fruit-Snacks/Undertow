@@ -52,7 +52,3 @@ build: clean
 .PHONY: clean
 clean:
 	rm -f bin/*undertow*
-
-.PHONY: compressed
-compressed: build
-	@for f in $(shell ls bin); do upx -o "bin/upx_$${f}" "bin/$${f}"; done
