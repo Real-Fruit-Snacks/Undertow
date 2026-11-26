@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-26
+
+### Changed
+- The two connect commands print as bare lines with no `$` prefix, so a triple-click copies exactly the command. The docs page demo matches.
+
 ## [1.4.0] - 2026-11-26
 
 ### Added

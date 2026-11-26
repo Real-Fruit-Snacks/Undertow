@@ -59,20 +59,18 @@ func outInit(verbose, quiet bool) {
 
 // Cyclorama Dawn tokens (BRAND.md §11), truecolour dark row.
 const (
-	cBeacon = "\x1b[38;2;255;146;84m"  // #FF9254
-	cMint   = "\x1b[38;2;61;220;151m"  // #3DDC97
-	cAmber  = "\x1b[38;2;255;194;71m"  // #FFC247
-	cFault  = "\x1b[38;2;255;92;108m"  // #FF5C6C Signal Crimson
-	cSteel  = "\x1b[38;2;116;184;232m" // #74B8E8
-	cMute   = "\x1b[38;2;179;181;192m" // #B3B5C0
+	cMint  = "\x1b[38;2;61;220;151m"  // #3DDC97
+	cAmber = "\x1b[38;2;255;194;71m"  // #FFC247
+	cFault = "\x1b[38;2;255;92;108m"  // #FF5C6C Signal Crimson
+	cSteel = "\x1b[38;2;116;184;232m" // #74B8E8
+	cMute  = "\x1b[38;2;179;181;192m" // #B3B5C0
 	// §11's 16-colour row, for terminals without truecolour.
-	cBeacon16 = "\x1b[91m" // bright red
-	cMint16   = "\x1b[32m" // green
-	cAmber16  = "\x1b[33m" // yellow
-	cFault16  = "\x1b[31m" // red
-	cSteel16  = "\x1b[36m" // cyan
-	cMute16   = "\x1b[90m" // bright black; §11 defines no 16-colour mute
-	cReset    = "\x1b[0m"
+	cMint16  = "\x1b[32m" // green
+	cAmber16 = "\x1b[33m" // yellow
+	cFault16 = "\x1b[31m" // red
+	cSteel16 = "\x1b[36m" // cyan
+	cMute16  = "\x1b[90m" // bright black; §11 defines no 16-colour mute
+	cReset   = "\x1b[0m"
 )
 
 func outPaint(truecolour, basic, tag, msg string) string {
@@ -135,10 +133,11 @@ func outFatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-// outPromptf prints a beacon prompt-style line, used sparingly.
-func outPromptf(format string, args ...any) {
+// outCommandf prints a paste-ready command line: no token, no prefix, so a
+// triple-click copies exactly the command. Plain text always, quiet-aware.
+func outCommandf(format string, args ...any) {
 	if outQuiet.Load() {
 		return
 	}
-	fmt.Fprintln(os.Stdout, outPaint(cBeacon, cBeacon16, "$", fmt.Sprintf(format, args...)))
+	fmt.Fprintf(os.Stdout, format+"\n", args...)
 }
