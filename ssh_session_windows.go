@@ -20,6 +20,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -63,10 +64,14 @@ func createPty(s ssh.Session, shell string) {
 			return
 		} else {
 			go func() {
-				if _, err := io.Copy(stdin, s); err != nil {
+				// Client EOF becomes the command's EOF. The session
+				// lifecycle belongs to the select below — closing the
+				// session here would race s.Exit and the client would
+				// see no exit status.
+				defer stdin.Close()
+				if _, err := io.Copy(stdin, s); err != nil && !errors.Is(err, os.ErrClosed) {
 					outWarnf("Error while copying input from %s to stdin: %v", s.RemoteAddr().String(), err)
 				}
-				s.Close()
 			}()
 		}
 		cmd.Stdout = s

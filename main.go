@@ -28,7 +28,7 @@ var (
 	localPassword = "letmeinbrudipls"
 	authorizedKey = ""
 	defaultShell  = "/bin/bash"
-	version       = "1.3.0-dev"
+	version       = "1.3.0"
 	LUSER         = "svc"
 	LHOST         = ""
 	LPORT         = "31337"

@@ -146,14 +146,14 @@
     <p class="intro">Every check below runs on every commit; the pipeline is public in the repo. What hasn't been run says so.</p>
     <div class="cols">
         <ul class="ck" aria-label="Checks run">
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build host: Windows 11, Go 1.27</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">gofmt, <code>go vet</code> and a clean <code>CGO_ENABLED=0</code> build for all six targets before every merge.</p></li>
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">CI cross-compile matrix</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">ubuntu-24.04, windows-2022 and macos-latest each build amd64 and arm64 on every commit, so the six release binaries can never drift from the tree.</p></li>
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">In-process integration tests</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">16 tests run the real server in-process on loopback and exercise it with a stock SSH client: password and public key authentication (accept and reject), exec with exit status, a PTY shell, an SFTP round trip, direct-tcpip and remote port forwarding, the rs-info channel and the full dial-home reverse flow. They caught a real exit-status race in the original session handler — fixed in this release.</p></li>
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">CI on every commit</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">gofmt, <code>go vet</code> and the test suite on ubuntu-24.04, plus a build matrix where ubuntu-24.04, windows-2022 and macos-latest each compile amd64 and arm64 — the six release binaries can never drift from the tree.</p></li>
         </ul>
         <ul class="ck" aria-label="More checks">
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Windows binary smoke run</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">The built <code>undertow.exe</code> starts and prints its usage on the build host.</p></li>
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build host: Windows 11, Go 1.27</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">The same test suite runs on the Windows build host before every merge, so the ConPTY path is exercised for real, not just cross-compiled.</p></li>
             <li data-state="open"><span class="box" aria-hidden="true"></span><span class="ch">macOS runtime</span><span class="ld" aria-hidden="true"></span><span class="rs">Not run</span>
                 <p class="why">Cross-compiled for aarch64 and x86_64 on every release, unsigned and untested; probably works, no promises. First run needs <code>xattr -d com.apple.quarantine</code> on the binary.</p></li>
         </ul>
