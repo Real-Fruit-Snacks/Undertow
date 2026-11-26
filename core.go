@@ -366,8 +366,8 @@ func printConnectLines(listeningAddress string) {
 		return
 	}
 	sock := fmt.Sprintf("/tmp/shell-tunnel-%s.sock", port)
-	outPromptf("ssh -fNM -S %s -p %s %s@%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes", sock, port, LUSER, host)
-	outPromptf("ssh -S %s -p %s %s@%s", sock, port, LUSER, host)
+	outCommandf("ssh -fNM -S %s -p %s %s@%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes", sock, port, LUSER, host)
+	outCommandf("ssh -S %s -p %s %s@%s", sock, port, LUSER, host)
 }
 
 func setupParameters(noCLI string, tlsWrapVar string, tlsSNIVar string) *params {
