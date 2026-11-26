@@ -74,5 +74,5 @@ func main() {
 		}
 	)
 
-	run(p, server)
+	run(p, &server)
 }

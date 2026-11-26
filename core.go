@@ -456,7 +456,7 @@ func setupParametersWithoutCLI(tlsWrapVar string, tlsSNIVar string) *params {
 	}
 }
 
-func run(p *params, server ssh.Server) {
+func run(p *params, server *ssh.Server) {
 	var (
 		ln  net.Listener
 		err error

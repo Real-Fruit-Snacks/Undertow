@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./...
+      - name: go build
+        run: CGO_ENABLED=0 go build ./...
+
+  build-matrix:
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-24.04, goos: linux }
+          - { os: windows-2022, goos: windows }
+          - { os: macos-latest, goos: darwin }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build amd64 and arm64
+        shell: bash
+        run: |
+          set -e
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=$arch go build -ldflags "-s -w" -o undertow-build .
+            rm -f undertow-build
+          done
