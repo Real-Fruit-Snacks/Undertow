@@ -20,7 +20,7 @@ shell-tunnel is the preservation fork of [Ferdinor's undertow](https://github.co
 
 | Piece | Does |
 |---|---|
-| `reverse` | Binary dials home through egress firewalls; you SSH to the bind it sets up on your box (random port by default, `-b` pins it) |
+| `reverse` | Binary dials home through egress firewalls and retries every 5 s until the listener answers; you SSH to the bind it sets up on your box (random port by default, `-b` pins it) |
 | `listen` | Binary listens on the target; you SSH straight to it |
 | PTY | openpty on Linux, ConPTY on Windows 10 17763+ — tab completion, job control, full-screen tools |
 | SFTP | Built-in subsystem on the same connection — `sftp -P 4444 svc@127.0.0.1` |
@@ -32,7 +32,7 @@ shell-tunnel is the preservation fork of [Ferdinor's undertow](https://github.co
 
 ## Tested on
 
-- 16 in-process integration tests run the real server on loopback: password and pubkey auth (accept and reject), exec with exit status, PTY shell, SFTP round trip, direct-tcpip and remote forwarding, the rs-info channel and the full dial-home reverse flow — on every commit in CI and on the Windows build host
+- 17 in-process integration tests run the real server on loopback: password and pubkey auth (accept and reject), exec with exit status, PTY shell, SFTP round trip, direct-tcpip and remote forwarding, the rs-info channel, the full dial-home reverse flow and a late-listener retry — on every commit in CI and on the Windows build host
 - Windows 11 · Go 1.27 — build host; gofmt, `go vet`, clean builds for all six targets
 - ubuntu-24.04, windows-2022, macos-latest · CI builds amd64 and arm64 on every commit
 - *Not* run: macOS at runtime — cross-compiled on every release, unsigned; first run needs `xattr -d com.apple.quarantine`
@@ -40,6 +40,7 @@ shell-tunnel is the preservation fork of [Ferdinor's undertow](https://github.co
 ## Known issues
 
 - The dial-home side uses `InsecureIgnoreHostKey`: a payload can't pin a host key it has never seen. Verify the callback out of band — the handler shows the connecting address and the rs-info line names the user and host.
+- Only the initial dial retries. An established callback that drops later is not redialled; run the payload again.
 - TLS wrapping presents a self-signed certificate generated at runtime. It hides the SSH banner from DPI; it does not authenticate the listener to the payload.
 - Baked credentials live in the binary. Build per engagement, and keep the handler scripts to yourself — they print the password and are written `chmod 700` for a reason.
 - Windows targets older than Windows 10 17763 have no ConPTY; use `-s ssh-shellhost.exe`, or append `cmd` to the ssh line for a non-PTY session.

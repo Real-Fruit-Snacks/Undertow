@@ -85,18 +85,20 @@ func outPaint(truecolour, basic, tag, msg string) string {
 	return truecolour + tag + cReset + " " + msg
 }
 
-// outOkf reports something that succeeded. Mint is only ever "OK".
+// outOkf reports an operational fact the operator always wants: a listener
+// coming up, a callback landing, a login. Mint is only ever "OK". Printed
+// unless quiet; -v is only for the [i] detail lines.
 func outOkf(format string, args ...any) {
-	if outQuiet.Load() || !outVerbose.Load() {
+	if outQuiet.Load() {
 		return
 	}
 	fmt.Fprintln(os.Stdout, outPaint(cMint, cMint16, "[ok]", fmt.Sprintf(format, args...)))
 }
 
 // outWarnf reports something the operator should see before continuing.
-// Amber is caution, not failure.
+// Amber is caution, not failure. Printed unless quiet.
 func outWarnf(format string, args ...any) {
-	if outQuiet.Load() || !outVerbose.Load() {
+	if outQuiet.Load() {
 		return
 	}
 	fmt.Fprintln(os.Stderr, outPaint(cAmber, cAmber16, "[!]", fmt.Sprintf(format, args...)))

