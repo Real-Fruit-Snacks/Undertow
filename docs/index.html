@@ -120,6 +120,27 @@
     </div>
 </section>
 
+<section class="card ref" id="ssh-options" aria-labelledby="ssh-options-h">
+    <h2 id="ssh-options-h">The master command's <code>-o</code> options</h2>
+    <p class="intro">Five OpenSSH client options make the first command paste-and-run and resilient to dropped connections. <strong>The first two disable normal host-identity verification:</strong> use them only on controlled networks and targets you are authorized to test.</p>
+    <div class="cols">
+        <ul class="ck spec">
+            <li><span class="ch"><code>UserKnownHostsFile</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>/dev/null</code></span>
+                <p class="why">Uses <code>/dev/null</code> instead of your user <code>known_hosts</code> file. The listener's temporary host key is not saved there, so later runs do not inherit stale entries.</p></li>
+            <li><span class="ch"><code>StrictHostKeyChecking</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>no</code></span>
+                <p class="why">Accepts the listener's host key without asking. That is convenient for an ephemeral lab server, but there is no normal host-identity check to warn you about a man-in-the-middle.</p></li>
+            <li><span class="ch"><code>ServerAliveInterval</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>60</code></span>
+                <p class="why">When no data has arrived from the server for 60 seconds, ssh sends an encrypted keepalive request. This keeps NAT and stateful-firewall mappings warm and helps detect dead connections.</p></li>
+        </ul>
+        <ul class="ck spec">
+            <li><span class="ch"><code>ServerAliveCountMax</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>10</code></span>
+                <p class="why">Disconnects after 10 consecutive keepalives go unanswered. At one per 60 seconds, ssh waits roughly ten minutes without a response before giving up.</p></li>
+            <li><span class="ch"><code>ExitOnForwardFailure</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>yes</code></span>
+                <p class="why">Exits if a forwarding requested at startup cannot be established, instead of leaving a connection that only looks ready. The base command has no forwards; this matters when you add <code>-L</code>, <code>-R</code> or <code>-D</code> to the master command.</p></li>
+        </ul>
+    </div>
+</section>
+
 <section class="card ref" id="what" aria-labelledby="what-h">
     <h2 id="what-h">What's in it</h2>
     <p class="intro">One binary covers both directions. Every status line starts with a bracketed tag — <code>[ok]</code>, <code>[!]</code>, <code>[x]</code>, <code>[i]</code> — so output stays meaningful piped or with <code>NO_COLOR</code> set.</p>
