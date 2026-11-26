@@ -50,6 +50,13 @@ func TestMain(m *testing.M) {
 // a random loopback port. The returned address is its "host:port".
 func newTestServer(t *testing.T, noShell bool) (*ssh.Server, string) {
 	t.Helper()
+	return newTestServerOn(t, noShell, "127.0.0.1:0")
+}
+
+// newTestServerOn does the same on a fixed address, for tests that need the
+// listener to appear at a known port after the fact.
+func newTestServerOn(t *testing.T, noShell bool, addr string) (*ssh.Server, string) {
+	t.Helper()
 
 	forwardHandler := &ssh.ForwardedTCPHandler{}
 	server := &ssh.Server{
@@ -73,7 +80,7 @@ func newTestServer(t *testing.T, noShell bool) (*ssh.Server, string) {
 		},
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
@@ -536,6 +543,52 @@ func TestDialHomeAndListen(t *testing.T) {
 	home.Close()
 }
 
+func TestDialHomeRetriesUntilListenerUp(t *testing.T) {
+	oldPassword := localPassword
+	localPassword = testPassword
+	t.Cleanup(func() { localPassword = oldPassword })
+
+	// Reserve an address with nothing listening, so the first dials fail.
+	reserved, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+	addr := reserved.Addr().String()
+	reserved.Close()
+
+	type dialResult struct {
+		ln  net.Listener
+		err error
+	}
+	result := make(chan dialResult, 1)
+	go func() {
+		ln, err := dialHomeAndListen("svc", addr, 0, false, false, "")
+		result <- dialResult{ln, err}
+	}()
+
+	select {
+	case res := <-result:
+		if res.ln != nil {
+			res.ln.Close()
+		}
+		t.Fatalf("dial finished with no listener up: %v", res.err)
+	case <-time.After(300 * time.Millisecond):
+	}
+
+	// The listener comes up late; the payload must still land.
+	newTestServerOn(t, false, addr)
+
+	select {
+	case res := <-result:
+		if res.err != nil {
+			t.Fatalf("dialHomeAndListen after retry: %v", res.err)
+		}
+		res.ln.Close()
+	case <-time.After(3 * dialRetryDelay):
+		t.Fatal("dial-home never retried")
+	}
+}
+
 func TestSetupParametersWithoutCLI(t *testing.T) {
 	p := setupParametersWithoutCLI("1", "login.example.com")
 	if p.listen {
@@ -573,7 +626,8 @@ func TestOutTokens(t *testing.T) {
 	outQuiet.Store(true)
 	defer outQuiet.Store(false)
 
-	// Verbose gate: ok/info/warn require verbose; fail requires only !quiet.
+	// Output contract: ok/warn/fail print unless quiet; only the [i]
+	// info/plan lines sit behind the verbose gate.
 	outVerbose.Store(false)
 	if outVerbose.Load() {
 		t.Fatal("verbose gate stuck")

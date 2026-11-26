@@ -391,21 +391,26 @@ HANDLER_EOF
 
             cat >> "$handler_name" << HANDLER_EOF
 echo ""
-echo "\${AMBER}[!]\${RESET} When you see 'New connection from', run:"
+echo "\${AMBER}[!]\${RESET} When a session lands, it prints its own two commands:"
+echo "\${MUTE}    1. ControlMaster: backgrounds after auth, one connection for everything\${RESET}"
+echo "\${MUTE}    2. Connect: the interactive PTY over that socket (sftp and forwards share it)\${RESET}"
 HANDLER_EOF
 
             if [ "$BPORT" = "0" ]; then
                 cat >> "$handler_name" << HANDLER_EOF
 echo ""
-echo "    \${BOLD}ssh -p <PORT> $connect_user@127.0.0.1\${RESET}"
-echo ""
-echo "\${AMBER}[!]\${RESET} Random port mode: Look for 'reachable via 127.0.0.1:<PORT>'"
-echo "\${AMBER}[!]\${RESET} in the connection message below to find the actual port."
+echo "\${AMBER}[!]\${RESET} Random port mode: the session line names the actual port."
+echo "\${MUTE}    With the port as PORT, the two commands are:\${RESET}"
+echo "    \${BOLD}ssh -fNM -S /tmp/shell-tunnel-PORT.sock -p PORT $connect_user@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes\${RESET}"
+echo "    \${BOLD}ssh -S /tmp/shell-tunnel-PORT.sock -p PORT $connect_user@127.0.0.1\${RESET}"
 HANDLER_EOF
             else
                 cat >> "$handler_name" << HANDLER_EOF
 echo ""
-echo "    \${BOLD}ssh -p $connect_port $connect_user@127.0.0.1\${RESET}"
+echo "    \${BOLD}ssh -fNM -S /tmp/shell-tunnel-$connect_port.sock -p $connect_port $connect_user@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes\${RESET}"
+echo "    \${BOLD}ssh -S /tmp/shell-tunnel-$connect_port.sock -p $connect_port $connect_user@127.0.0.1\${RESET}"
+echo ""
+echo "\${MUTE}    sftp: sftp -o ControlPath=/tmp/shell-tunnel-$connect_port.sock -P $connect_port $connect_user@127.0.0.1\${RESET}"
 HANDLER_EOF
             fi
 

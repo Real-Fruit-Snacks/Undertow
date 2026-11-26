@@ -17,5 +17,15 @@ func detachProcess() error {
 		HideWindow:    true,
 		CreationFlags: 0x00000008 | 0x08000000, // DETACHED_PROCESS | CREATE_NO_WINDOW
 	}
+	// Same contract as unix: no inherited handles back to the session
+	// that launched the payload.
+	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+	if err != nil {
+		return err
+	}
+	defer devNull.Close()
+	cmd.Stdin = devNull
+	cmd.Stdout = devNull
+	cmd.Stderr = devNull
 	return cmd.Start()
 }

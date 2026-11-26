@@ -8,8 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.4.0] - 2026-11-26
 
+### Added
+- Dial-home retries every 5 seconds until the listener answers, instead of exiting on the first failed attempt; a wrong baked password also retries (Ctrl+C to stop). New late-listener regression test.
+- Callbacks are numbered (`Session 1: …`) and print two paste-ready commands: a ControlMaster line (`ssh -fNM -S /tmp/shell-tunnel-<port>.sock …` with `UserKnownHostsFile=/dev/null`, `StrictHostKeyChecking=no`, `ServerAliveInterval=60`, `ServerAliveCountMax=10` and `ExitOnForwardFailure=yes`) and the connect line over that socket, so SFTP and forwards share one authenticated connection and per-run host keys never touch `~/.ssh/known_hosts`. The `build.sh` handler teaches the same two lines.
+- `-V` / `--version` prints `shell-tunnel vX.Y.Z` and exits 0.
+- Dial-home sends `keepalive@openssh.com` every 15 seconds, so NAT and stateful-firewall idle timeouts don't eat parked callbacks.
+- The PTY shell falls back to `/bin/sh` when the default `/bin/bash` is missing on the target (explicit `-s`/`RS_SHELL` paths are honoured verbatim). New unix-only test, 18 tests in total.
+
 ### Changed
 - Renamed from Undertow to shell-tunnel, following the RFS naming rule (`thing-it-does`, lowercase, hyphens). The repository, CLI binary, build outputs, release assets and docs page all take the new name; the upstream fork note and the original copyright headers are unchanged.
+- `[ok]` and `[!]` lines (listener up, callback landed, denied requests, failed logins, retry notices) now print by default; `-v` only gates the `[i]` detail lines. Quiet NOCLI builds stay silent.
+
+### Fixed
+- Interactive password entry no longer spins in an infinite redial loop when stdin cannot be read; the error is returned.
+- `-h` exits 0 and a flag parse error exits 2, per the CLI contract (0 ok, 1 runtime, 2 usage); previously help exited 1.
+- The SFTP server is closed on every exit path, not just a clean EOF.
+- `-d`/`DAEMONIZE` detached children no longer inherit the launching session's stdio handles (nc or evil-winrm would stay held open); stdio now points at the null device on both unix and Windows.
 
 ## [1.3.0] - 2026-11-26
 

