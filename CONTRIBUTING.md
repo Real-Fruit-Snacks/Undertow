@@ -1,6 +1,6 @@
-# Contributing to Undertow
+# Contributing to shell-tunnel
 
-Thank you for your interest in contributing to Undertow. This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to shell-tunnel. This document provides guidelines for contributing to the project.
 
 ## Development Setup
 
@@ -16,8 +16,8 @@ Thank you for your interest in contributing to Undertow. This document provides 
 
 ```bash
 # Clone the repository
-git clone https://github.com/Real-Fruit-Snacks/Undertow.git
-cd Undertow
+git clone https://github.com/Real-Fruit-Snacks/shell-tunnel.git
+cd shell-tunnel
 
 # Verify Go installation
 go version
@@ -32,7 +32,7 @@ make build
 ### Project Structure
 
 ```
-undertow/
+shell-tunnel/
 ├── main.go                    # Entry point, ldflags-baked variables, server wiring
 ├── core.go                    # Auth, port forwarding, TLS, SFTP, parameter parsing
 ├── out.go                     # Bracketed status output (RFS Cyclorama Dawn palette)
@@ -123,7 +123,7 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `chore`
 
 ## Testing
 
-Since Undertow is a penetration testing tool, testing involves:
+Since shell-tunnel is a penetration testing tool, testing involves:
 
 1. **Build verification:** Binary compiles for all targets
 2. **Functional testing:** Reverse and bind modes work
@@ -136,9 +136,9 @@ Since Undertow is a penetration testing tool, testing involves:
 ls -la bin/
 
 # Verify binary size
-du -h bin/undertow*
+du -h bin/shell-tunnel*
 ```
 
 ## License
 
-By contributing to Undertow, you agree that your contributions will be licensed under the [GNU General Public License v3.0](LICENSE).
+By contributing to shell-tunnel, you agree that your contributions will be licensed under the [GNU General Public License v3.0](LICENSE).

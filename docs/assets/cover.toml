@@ -1,8 +1,8 @@
 # Cover + social preview. Regenerate from the folder holding both clones:
-#   python3 rfs-brand/tools/make-cover.py Undertow/docs/assets/cover.toml
+#   python3 rfs-brand/tools/make-cover.py shell-tunnel/docs/assets/cover.toml
 # Preview at 1200, 830, and 400 px in both themes:
-#   python3 rfs-brand/tools/make-cover.py Undertow/docs/assets/cover.toml --preview preview.png
-name        = "undertow"
+#   python3 rfs-brand/tools/make-cover.py shell-tunnel/docs/assets/cover.toml --preview preview.png
+name        = "shell-tunnel"
 description = "Static SSH server for bind and reverse shells with PTY and SFTP"
 
 # The tool as a flow: the operator builds a tuned binary, the target runs it,
@@ -21,7 +21,7 @@ chips = ["reverse", "bind", "tls"]
 tone  = "amber"
 
 [panel.tool]
-label = "undertow"
+label = "shell-tunnel"
 note  = "shells · sftp · forward"
 
 [panel.output]

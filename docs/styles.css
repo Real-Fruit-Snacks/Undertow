@@ -1,6 +1,6 @@
-/* undertow docs (Cyclorama Dawn v2.1.0): the base of this sheet is the one the pwn handbook
+/* shell-tunnel docs (Cyclorama Dawn v2.1.0): the base of this sheet is the one the pwn handbook
    pages (pwn-broker, pwn-shop, pwn-playbooks, pwn-report) share, kept identical so every RFS
-   page reads as one site; undertow's own part starts at "this page".
+   page reads as one site; shell-tunnel's own part starts at "this page".
    Depth comes from overlapping sheets and crisp 1px borders, never drop shadows or neon glow. */
 
 @font-face {
@@ -422,7 +422,7 @@ p { margin: 0 0 1rem; text-wrap: pretty; }
     .js-run .screen .ln { visibility: visible; }
 }
 
-/* ---------- this page: undertow ---------- */
-.is-tow { --tab: var(--rfs-steel-ink); }
+/* ---------- this page: shell-tunnel ---------- */
+.is-tunnel { --tab: var(--rfs-steel-ink); }
 .screen .i { color: #74B8E8; }
 .screen .a { color: #FFC247; }

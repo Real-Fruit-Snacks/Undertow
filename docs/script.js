@@ -1,7 +1,7 @@
-// undertow docs (Cyclorama Dawn v2.1.0): the module below is the pwn handbook's shared script
+// shell-tunnel docs (Cyclorama Dawn v2.1.0): the module below is the pwn handbook's shared script
 // (pwn-broker, pwn-shop, pwn-playbooks, pwn-report), used unchanged so every RFS page behaves
 // the same. Dark (LX 263) default; Light (LX 512) opt-in toggle with radial View Transition and
-// cross-tab rfs-theme storage sync. undertow's own init starts at "this page".
+// cross-tab rfs-theme storage sync. shell-tunnel's own init starts at "this page".
 var Handbook = (function () {
     var root = document.documentElement;
     var still = matchMedia('(prefers-reduced-motion: reduce)');
@@ -186,5 +186,5 @@ var Handbook = (function () {
     return { still: still, $$: $$, checklist: checklist, whenSeen: whenSeen, terminal: terminal, toast: showToast };
 })();
 
-// ---------- this page: undertow ----------
+// ---------- this page: shell-tunnel ----------
 Handbook.terminal(document.getElementById('screen'), document.getElementById('errand-ck'));

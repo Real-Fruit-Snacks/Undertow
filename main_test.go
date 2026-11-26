@@ -1,4 +1,4 @@
-// undertow - a lightweight ssh server with a reverse connection feature
+// shell-tunnel - a lightweight ssh server with a reverse connection feature
 // Copyright (C) 2021  Ferdinor <ferdinor@mailbox.org>
 
 // This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-const testPassword = "undertow-test-password"
+const testPassword = "shell-tunnel-test-password"
 
 func TestMain(m *testing.M) {
 	// Keep test output readable: silence all status lines.
@@ -354,7 +354,7 @@ func TestSFTPRoundTrip(t *testing.T) {
 	}
 	defer sc.Close()
 
-	payload := []byte("undertow sftp round trip\n\x00\x01\x02")
+	payload := []byte("shell-tunnel sftp round trip\n\x00\x01\x02")
 	path := filepath.Join(t.TempDir(), "payload.bin")
 
 	f, err := sc.Create(path)

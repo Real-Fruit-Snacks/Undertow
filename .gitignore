@@ -1,11 +1,11 @@
 # Build artifacts
-/undertow
+/shell-tunnel
 bin/*
 !bin/.gitignore
 
 # SSH keys
-assets/id_undertow
-assets/id_undertow.pub
+assets/id_shell-tunnel
+assets/id_shell-tunnel.pub
 
 # Claude Code
 CLAUDE.md

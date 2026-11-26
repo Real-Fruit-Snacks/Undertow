@@ -57,7 +57,7 @@ type params struct {
 	tlsSNI       string
 }
 
-const detachEnvKey = "_UNDERTOW_DETACHED"
+const detachEnvKey = "_SHELL_TUNNEL_DETACHED"
 
 func shouldDetach() bool {
 	if os.Getenv(detachEnvKey) == "1" {
@@ -329,7 +329,7 @@ func setupParameters(noCLI string, tlsWrapVar string, tlsSNIVar string) *params 
 		return setupParametersWithoutCLI(tlsWrapVar, tlsSNIVar)
 	}
 
-	var help = fmt.Sprintf(`undertow v%[2]s  Copyright (C) 2021  Ferdinor <ferdinor@mailbox.org>
+	var help = fmt.Sprintf(`shell-tunnel v%[2]s  Copyright (C) 2021  Ferdinor <ferdinor@mailbox.org>
 
 Usage: %[1]s [options] [[<user>@]<target>]
 
@@ -344,8 +344,8 @@ Examples:
 	%[1]s -v -b 0 kali@192.168.0.2
 
 Options:
-	-l, Start undertow in listening mode (overrides reverse scenario)
-	-p, Port at which undertow is listening for incoming ssh connections (bind scenario)
+	-l, Start shell-tunnel in listening mode (overrides reverse scenario)
+	-p, Port at which shell-tunnel is listening for incoming ssh connections (bind scenario)
 		or where it tries to establish a ssh connection (reverse scenario) (default: %[6]s)
 	-b, Reverse scenario only: bind to this port after dialling home (default: %[7]s)
 	-s, Shell to spawn for incoming connections, e.g. /bin/bash; (default: %[5]s)

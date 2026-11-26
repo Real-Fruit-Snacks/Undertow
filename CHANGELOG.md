@@ -1,10 +1,15 @@
 # Changelog
 
-All notable changes to Undertow will be documented in this file.
+All notable changes to shell-tunnel will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+## [1.4.0] - 2026-11-26
+
+### Changed
+- Renamed from Undertow to shell-tunnel, following the RFS naming rule (`thing-it-does`, lowercase, hyphens). The repository, CLI binary, build outputs, release assets and docs page all take the new name; the upstream fork note and the original copyright headers are unchanged.
 
 ## [1.3.0] - 2026-11-26
 
