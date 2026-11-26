@@ -28,7 +28,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -85,17 +84,17 @@ func removeDFlag(args []string) []string {
 func createLocalPortForwardingCallback(forbidden bool) ssh.LocalPortForwardingCallback {
 	return func(ctx ssh.Context, dhost string, dport uint32) bool {
 		if forbidden {
-			log.Printf("Denying local port forwarding request %s:%d", dhost, dport)
+			outWarnf("Denying local port forwarding request %s:%d", dhost, dport)
 			return false
 		}
-		log.Printf("Accepted forward to %s:%d", dhost, dport)
+		outInfof("Accepted forward to %s:%d", dhost, dport)
 		return true
 	}
 }
 
 func createReversePortForwardingCallback() ssh.ReversePortForwardingCallback {
 	return func(ctx ssh.Context, host string, port uint32) bool {
-		log.Printf("Attempt to bind at %s:%d granted", host, port)
+		outInfof("Attempt to bind at %s:%d granted", host, port)
 		return true
 	}
 }
@@ -103,7 +102,7 @@ func createReversePortForwardingCallback() ssh.ReversePortForwardingCallback {
 func createSessionRequestCallback(forbidden bool) ssh.SessionRequestCallback {
 	return func(sess ssh.Session, requestType string) bool {
 		if forbidden {
-			log.Println("Denying shell/exec/subsystem request")
+			outWarnf("Denying shell/exec/subsystem request")
 			return false
 		}
 		return true
@@ -114,9 +113,9 @@ func createPasswordHandler(localPassword string) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pass string) bool {
 		passed := subtle.ConstantTimeCompare([]byte(pass), []byte(localPassword)) == 1
 		if passed {
-			log.Printf("Successful authentication with password from %s@%s", ctx.User(), ctx.RemoteAddr().String())
+			outOkf("Successful authentication with password from %s@%s", ctx.User(), ctx.RemoteAddr().String())
 		} else {
-			log.Printf("Invalid password from %s@%s", ctx.User(), ctx.RemoteAddr().String())
+			outWarnf("Invalid password from %s@%s", ctx.User(), ctx.RemoteAddr().String())
 		}
 		return passed
 	}
@@ -130,14 +129,14 @@ func createPublicKeyHandler(authorizedKey string) ssh.PublicKeyHandler {
 	return func(ctx ssh.Context, key ssh.PublicKey) bool {
 		master, _, _, _, err := ssh.ParseAuthorizedKey([]byte(authorizedKey))
 		if err != nil {
-			log.Println("Encountered error while parsing public key:", err)
+			outWarnf("Encountered error while parsing public key: %v", err)
 			return false
 		}
 		passed := bytes.Equal(key.Marshal(), master.Marshal())
 		if passed {
-			log.Printf("Successful authentication with ssh key from %s@%s", ctx.User(), ctx.RemoteAddr().String())
+			outOkf("Successful authentication with ssh key from %s@%s", ctx.User(), ctx.RemoteAddr().String())
 		} else {
-			log.Printf("Invalid ssh key from %s@%s", ctx.User(), ctx.RemoteAddr().String())
+			outWarnf("Invalid ssh key from %s@%s", ctx.User(), ctx.RemoteAddr().String())
 		}
 		return passed
 	}
@@ -147,16 +146,16 @@ func createSFTPHandler() ssh.SubsystemHandler {
 	return func(s ssh.Session) {
 		server, err := sftp.NewServer(s)
 		if err != nil {
-			log.Printf("Sftp server init error: %s\n", err)
+			outWarnf("Sftp server init error: %v", err)
 			return
 		}
 
-		log.Printf("New sftp connection from %s", s.RemoteAddr().String())
+		outInfof("New sftp connection from %s", s.RemoteAddr().String())
 		if err := server.Serve(); err == io.EOF {
 			server.Close()
-			log.Println("Sftp connection closed by client")
+			outInfof("Sftp connection closed by client")
 		} else if err != nil {
-			log.Println("Sftp server exited with error:", err)
+			outWarnf("Sftp server exited with error: %v", err)
 		}
 	}
 }
@@ -238,7 +237,7 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 			fmt.Println("Enter password:")
 			data, err := term.ReadPassword(int(syscall.Stdin))
 			if err != nil {
-				log.Println(err)
+				outWarnf("%v", err)
 				continue
 			}
 
@@ -252,7 +251,7 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 
 	bindAddr := fmt.Sprintf("127.0.0.1:%d", homeBindPort)
 	if homeBindPort == 0 {
-		log.Println("Requesting random port allocation from SSH server...")
+		outInfof("Requesting random port allocation from SSH server...")
 	}
 	ln, err := client.Listen("tcp", bindAddr)
 	if err != nil {
@@ -260,11 +259,11 @@ func dialHomeAndListen(username string, address string, homeBindPort uint, askFo
 	}
 
 	actualAddr := ln.Addr().String()
-	log.Printf("Success: listening at home on %s", actualAddr)
+	outOkf("listening at home on %s", actualAddr)
 
 	// Verify port allocation worked (defensive check)
 	if homeBindPort == 0 && strings.HasSuffix(actualAddr, ":0") {
-		log.Println("Warning: SSH server returned port 0 - random port allocation may not be supported")
+		outWarnf("SSH server returned port 0 - random port allocation may not be supported")
 	}
 
 	// Attempt to send extra info back home in the info message of an extra ssh channel
@@ -297,7 +296,7 @@ func sendExtraInfo(client *gossh.Client, listeningAddress string) {
 	newChan, newReq, err := client.OpenChannel("rs-info", gossh.Marshal(&extraInfo))
 	// The receiving end is expected to reject the channel, so "th4nkz" is a sign of success and we ignore it
 	if err != nil && !strings.Contains(err.Error(), "th4nkz") {
-		log.Printf("Could not create info channel: %+v", err)
+		outWarnf("Could not create info channel: %+v", err)
 	}
 	// If the channel is actually accepted, just close it again
 	if err == nil {
@@ -312,10 +311,10 @@ func createExtraInfoHandler() ssh.ChannelHandler {
 		err := gossh.Unmarshal(newChan.ExtraData(), &extraInfo)
 		newChan.Reject(gossh.Prohibited, "th4nkz")
 		if err != nil {
-			log.Printf("Could not parse extra info from %s", conn.RemoteAddr())
+			outWarnf("Could not parse extra info from %s", conn.RemoteAddr())
 			return
 		}
-		log.Printf(
+		outOkf(
 			"New connection from %s: %s on %s reachable via %s",
 			conn.RemoteAddr(),
 			extraInfo.CurrentUser,
@@ -356,7 +355,7 @@ Options:
 		other sessions where you don't want to hold the window open)
 	-N, Deny all incoming shell/exec/subsystem and local port forwarding requests
 		(if only remote port forwarding is needed, e.g. when catching reverse connections)
-	-v, Emit log output
+	-v, Emit status output ([ok]/[!]/[x]/[i] lines; respects NO_COLOR)
 
 <target>
 	Optional target which enables the reverse scenario. Can be prepended with
@@ -377,11 +376,11 @@ Credentials:
 
 	lport, err := strconv.ParseUint(LPORT, 10, 32)
 	if err != nil {
-		log.Fatal("Cannot convert LPORT: ", err)
+		outFatalf("Cannot convert LPORT: %v", err)
 	}
 	homeBindPort, err := strconv.ParseUint(BPORT, 10, 32)
 	if err != nil {
-		log.Fatal("Cannot convert BPORT: ", err)
+		outFatalf("Cannot convert BPORT: %v", err)
 	}
 	flag.UintVar(&p.LPORT, "p", uint(lport), "")
 	flag.UintVar(&p.homeBindPort, "b", uint(homeBindPort), "")
@@ -392,15 +391,13 @@ Credentials:
 	flag.Parse()
 
 	if p.LPORT > 65535 {
-		log.Fatal("Error: Port (-p) must be between 1 and 65535")
+		outFatalf("Port (-p) must be between 1 and 65535")
 	}
 	if p.homeBindPort > 65535 {
-		log.Fatal("Error: Bind port (-b) must be between 1 and 65535")
+		outFatalf("Bind port (-b) must be between 1 and 65535")
 	}
 
-	if !p.verbose {
-		log.SetOutput(io.Discard)
-	}
+	outInit(p.verbose, false)
 
 	switch len(flag.Args()) {
 	case 0:
@@ -416,12 +413,12 @@ Credentials:
 			p.LUSER = target[0]
 			p.LHOST = target[1]
 		default:
-			log.Fatalf("Could not parse '%s'", target)
+			outFatalf("Could not parse '%s'", target)
 		}
 
 	default:
-		log.Println("Invalid arguments, check usage!")
-		os.Exit(1)
+		outFailf("Invalid arguments, check usage")
+		os.Exit(2)
 	}
 
 	p.tlsWrap = tlsWrapVar != ""
@@ -433,14 +430,14 @@ Credentials:
 func setupParametersWithoutCLI(tlsWrapVar string, tlsSNIVar string) *params {
 	lport, err := strconv.ParseUint(LPORT, 10, 32)
 	if err != nil {
-		log.Fatal("Cannot convert LPORT: ", err)
+		outFatalf("Cannot convert LPORT: %v", err)
 	}
 	homeBindPort, err := strconv.ParseUint(BPORT, 10, 32)
 	if err != nil {
-		log.Fatal("Cannot convert BPORT: ", err)
+		outFatalf("Cannot convert BPORT: %v", err)
 	}
 
-	log.SetOutput(io.Discard)
+	outInit(false, true)
 
 	return &params{
 		LUSER:        LUSER,
@@ -463,37 +460,39 @@ func run(p *params, server *ssh.Server) {
 	)
 
 	if p.listen || p.LHOST == "" {
-		log.Printf("Starting ssh server on :%d", p.LPORT)
+		outInfof("Starting ssh server on :%d", p.LPORT)
 		ln, err = net.Listen("tcp", fmt.Sprintf(":%d", p.LPORT))
 		if err == nil {
 			if p.tlsWrap {
 				cert, tlsErr := generateSelfSignedCert(p.tlsSNI)
 				if tlsErr != nil {
-					log.Fatal("Failed to generate TLS certificate: ", tlsErr)
+					outFatalf("Failed to generate TLS certificate: %v", tlsErr)
 				}
 				tlsConfig := &tls.Config{
 					Certificates: []tls.Certificate{cert},
 					NextProtos:   []string{"h2", "http/1.1"},
 				}
 				ln = tls.NewListener(ln, tlsConfig)
-				log.Printf("Success: TLS listening on %s", ln.Addr().String())
+				outOkf("TLS listening on %s", ln.Addr().String())
 			} else {
-				log.Printf("Success: listening on %s", ln.Addr().String())
+				outOkf("listening on %s", ln.Addr().String())
 			}
 		}
 	} else {
 		target := net.JoinHostPort(p.LHOST, fmt.Sprintf("%d", p.LPORT))
 		if p.tlsWrap {
-			log.Printf("Dialling home via TLS+SSH to %s (SNI: %s)", target, p.tlsSNI)
+			outInfof("Dialling home via TLS+SSH to %s (SNI: %s)", target, p.tlsSNI)
 		} else {
-			log.Printf("Dialling home via ssh to %s", target)
+			outInfof("Dialling home via ssh to %s", target)
 		}
 		ln, err = dialHomeAndListen(p.LUSER, target, p.homeBindPort, p.verbose, p.tlsWrap, p.tlsSNI)
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		outFatalf("%v", err)
 	}
 	defer ln.Close()
-	log.Fatal(server.Serve(ln))
+	if serveErr := server.Serve(ln); serveErr != nil {
+		outFatalf("%v", serveErr)
+	}
 }

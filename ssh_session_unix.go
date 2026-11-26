@@ -22,7 +22,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"os/user"
 
@@ -42,7 +41,7 @@ func createPty(s ssh.Session, shell string) {
 	}
 	f, err := pty.Start(cmd)
 	if err != nil {
-		log.Println("Could not start shell:", err)
+		outWarnf("Could not start shell: %v", err)
 		io.WriteString(s, "Failed to start shell\n")
 		s.Exit(255)
 		return
@@ -70,16 +69,16 @@ func createPty(s ssh.Session, shell string) {
 	select {
 	case err := <-done:
 		if err != nil {
-			log.Println("Session ended with error:", err)
+			outWarnf("Session ended with error: %v", err)
 			s.Exit(255)
 			return
 		}
-		log.Println("Session ended normally")
+		outOkf("Session ended normally")
 		s.Exit(cmd.ProcessState.ExitCode())
 		return
 
 	case <-s.Context().Done():
-		log.Printf("Session terminated: %s", s.Context().Err())
+		outInfof("Session terminated: %v", s.Context().Err())
 		return
 	}
 }
