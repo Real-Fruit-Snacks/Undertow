@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-26
+
+### Changed
+- Numbered titles label the two connect commands, with a blank line between the steps. The listener and generated handler use the same layout, and the docs demo matches.
+
 ## [1.4.1] - 2026-11-26
 
 ### Changed
