@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Undertow
+description: Report a bug in shell-tunnel
 title: "[Bug]: "
 labels: ["bug"]
 body:

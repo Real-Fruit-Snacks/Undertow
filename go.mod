@@ -1,4 +1,4 @@
-module undertow
+module shell-tunnel
 
 go 1.26.0
 

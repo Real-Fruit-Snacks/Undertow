@@ -2,13 +2,13 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Undertow, please report it responsibly.
+If you discover a security vulnerability in shell-tunnel, please report it responsibly.
 
 **Do NOT open a public issue for security vulnerabilities.**
 
 Instead, please email security concerns to the repository maintainers through GitHub's private vulnerability reporting:
 
-1. Go to the [Security tab](https://github.com/Real-Fruit-Snacks/Undertow/security)
+1. Go to the [Security tab](https://github.com/Real-Fruit-Snacks/shell-tunnel/security)
 2. Click **"Report a vulnerability"**
 3. Provide a detailed description of the vulnerability
 
@@ -27,7 +27,7 @@ Instead, please email security concerns to the repository maintainers through Gi
 
 ## Scope
 
-This security policy applies to the Undertow codebase itself. Undertow is a dual-use tool: its shells and forwarding are the feature, so reports are triaged against the threat model below rather than against the mere presence of offensive capability.
+This security policy applies to the shell-tunnel codebase itself. shell-tunnel is a dual-use tool: its shells and forwarding are the feature, so reports are triaged against the threat model below rather than against the mere presence of offensive capability.
 
 **In scope:**
 
@@ -51,10 +51,10 @@ This security policy applies to the Undertow codebase itself. Undertow is a dual
 
 ## Threat Model
 
-Undertow is designed for use in authorized penetration testing engagements. The threat model assumes:
+shell-tunnel is designed for use in authorized penetration testing engagements. The threat model assumes:
 
 - The operator has authorized access to deploy the binary
-- Network defenders may attempt to detect and block Undertow traffic
+- Network defenders may attempt to detect and block shell-tunnel traffic
 - The binary may be analyzed by reverse engineers
 
 Security improvements that make the tool more resilient in these scenarios are welcome.

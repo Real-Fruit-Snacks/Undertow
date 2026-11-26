@@ -1,10 +1,10 @@
-# undertow
+# shell-tunnel
 
 Static SSH server for bind and reverse shells with PTY and SFTP
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cover-dark.svg">
-  <img alt="undertow: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client" src="docs/assets/cover-light.svg" width="100%">
+  <img alt="shell-tunnel: a tuned static binary on the target becomes a PTY shell for the operator's plain ssh client" src="docs/assets/cover-light.svg" width="100%">
 </picture>
 
 ```sh
@@ -12,11 +12,9 @@ Static SSH server for bind and reverse shells with PTY and SFTP
 ./build.sh listen 8888
 ```
 
-I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. undertow is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain `ssh` client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. For authorized security testing only.
+I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain `ssh` client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. For authorized security testing only.
 
-undertow is the preservation fork of [Ferdinor's undertow](https://github.com/Ferdinor) (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained: current dependencies (the 2021 `x/crypto` pin had known SSH vulnerabilities), CI on every commit, and tagged releases with six prebuilt binaries.
-
-> *An undertow is a current flowing beneath the surface in the opposite direction from what's visible above. Felt fitting for a tool that hides SSH traffic inside TLS — appearing as HTTPS on the wire while the session flows underneath.*
+shell-tunnel is the preservation fork of [Ferdinor's undertow](https://github.com/Ferdinor) (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained: current dependencies (the 2021 `x/crypto` pin had known SSH vulnerabilities), CI on every commit, and tagged releases with six prebuilt binaries.
 
 ## What's in it
 
@@ -56,4 +54,4 @@ undertow is the preservation fork of [Ferdinor's undertow](https://github.com/Fe
 
 [GPLv3](LICENSE), inherited from the upstream project; original copyright headers stay in every source file. For authorized security testing with explicit written permission only.
 
-[Project page](https://real-fruit-snacks.github.io/Undertow/) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
+[Project page](https://real-fruit-snacks.github.io/shell-tunnel/) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)

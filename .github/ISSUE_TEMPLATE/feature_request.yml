@@ -1,12 +1,12 @@
 name: Feature Request
-description: Suggest a new feature or enhancement for Undertow
+description: Suggest a new feature or enhancement for shell-tunnel
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting an improvement to Undertow.
+        Thank you for suggesting an improvement to shell-tunnel.
 
   - type: dropdown
     id: category
@@ -31,7 +31,7 @@ body:
     attributes:
       label: Description
       description: A clear description of the feature you'd like
-      placeholder: I would like Undertow to...
+      placeholder: I would like shell-tunnel to...
     validations:
       required: true
 

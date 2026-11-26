@@ -29,12 +29,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - { os: ubuntu-24.04, goos: linux,  goarch: amd64, asset: undertow-x86_64-linux.tar.gz,          exe: undertow }
-          - { os: ubuntu-24.04, goos: linux,  goarch: arm64, asset: undertow-aarch64-linux.tar.gz,         exe: undertow }
-          - { os: windows-2022, goos: windows, goarch: amd64, asset: undertow-x86_64-windows.zip,          exe: undertow.exe }
-          - { os: windows-2022, goos: windows, goarch: arm64, asset: undertow-aarch64-windows.zip,         exe: undertow.exe }
-          - { os: macos-latest, goos: darwin, goarch: amd64, asset: undertow-x86_64-apple-darwin.tar.gz,   exe: undertow }
-          - { os: macos-latest, goos: darwin, goarch: arm64, asset: undertow-aarch64-apple-darwin.tar.gz,  exe: undertow }
+          - { os: ubuntu-24.04, goos: linux,  goarch: amd64, asset: shell-tunnel-x86_64-linux.tar.gz,          exe: shell-tunnel }
+          - { os: ubuntu-24.04, goos: linux,  goarch: arm64, asset: shell-tunnel-aarch64-linux.tar.gz,         exe: shell-tunnel }
+          - { os: windows-2022, goos: windows, goarch: amd64, asset: shell-tunnel-x86_64-windows.zip,          exe: shell-tunnel.exe }
+          - { os: windows-2022, goos: windows, goarch: arm64, asset: shell-tunnel-aarch64-windows.zip,         exe: shell-tunnel.exe }
+          - { os: macos-latest, goos: darwin, goarch: amd64, asset: shell-tunnel-x86_64-apple-darwin.tar.gz,   exe: shell-tunnel }
+          - { os: macos-latest, goos: darwin, goarch: arm64, asset: shell-tunnel-aarch64-apple-darwin.tar.gz,  exe: shell-tunnel }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5

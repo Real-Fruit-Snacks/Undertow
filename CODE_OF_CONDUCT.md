@@ -24,9 +24,9 @@ Examples of unacceptable behavior:
 
 ## Responsible Use
 
-Undertow is a penetration testing tool intended for **authorized security assessments only**. Contributors and users must:
+shell-tunnel is a penetration testing tool intended for **authorized security assessments only**. Contributors and users must:
 
-- Only use Undertow against systems they own or have explicit written authorization to test
+- Only use shell-tunnel against systems they own or have explicit written authorization to test
 - Comply with all applicable local, state, national, and international laws
 - Not use the tool for unauthorized access to systems or networks
 
