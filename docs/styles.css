@@ -424,5 +424,11 @@ p { margin: 0 0 1rem; text-wrap: pretty; }
 
 /* ---------- this page: shell-tunnel ---------- */
 .is-tunnel { --tab: var(--rfs-steel-ink); }
+.is-tunnel .theme-btn,
+.is-tunnel .replay,
+.is-tunnel .top-nav a,
+.is-tunnel .foot a { min-height: 44px; }
+.is-tunnel .top-nav a { display: inline-flex; align-items: center; }
+.is-tunnel .ck li[data-state="live"] .why code { color: var(--ink); }
 .screen .i { color: #74B8E8; }
 .screen .a { color: #FFC247; }

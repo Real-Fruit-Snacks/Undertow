@@ -63,12 +63,15 @@ var Handbook = (function () {
             if (!document.startViewTransition || still.matches) return commit();
             var r = toggle.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
             var end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-            document.startViewTransition(commit).ready.then(function () {
+            var transition = document.startViewTransition(commit);
+            var animated = transition.ready.then(function () {
                 root.animate(
                     { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + end + 'px at ' + x + 'px ' + y + 'px)'] },
                     { duration: 520, easing: 'cubic-bezier(.22, .61, .36, 1)', pseudoElement: '::view-transition-new(root)' }
                 );
             });
+            // Hidden tabs and rapid toggles can abort any public transition promise.
+            Promise.allSettled([animated, transition.updateCallbackDone, transition.finished]);
         });
     }
     window.addEventListener('storage', function (ev) {
